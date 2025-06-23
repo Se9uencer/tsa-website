@@ -30,6 +30,10 @@ export default function SignIn() {
     <AuthLayout>
       <div className="flex flex-col items-center w-full">
         <Logo className="mb-8" />
+        <h2 className="text-3xl font-bold mb-2 text-white">Sign In</h2>
+        <p className="mb-8 text-lg text-white">
+          Or <Link href="/signup" className="hover:underline font-medium text-white">create an account</Link>
+        </p>
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-8">
           <div className="flex flex-col gap-6">
             <div>
@@ -50,12 +54,6 @@ export default function SignIn() {
               className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-500 to-violet-500 text-white text-xl font-semibold shadow-lg hover:from-blue-600 hover:to-violet-600 transition">
               {loading ? 'Signing In...' : 'Sign In'}
             </button>
-            <Link
-              href="/signup"
-              className="w-full py-4 rounded-xl border border-blue-500 text-blue-400 text-xl font-semibold text-center mt-2 hover:bg-blue-950/30 transition"
-            >
-              Create an Account
-            </Link>
           </div>
         </form>
       </div>

@@ -40,6 +40,11 @@ export default function SignUp() {
     } else if (data.user && data.user.identities && data.user.identities.length === 0) {
       setError('A user with this email already exists but is unconfirmed. Please check your email to confirm your account.');
     } else {
+      if (data.user) {
+        await supabase.from('profiles').insert([
+          { id: data.user.id, email: data.user.email, full_name: name }
+        ]);
+      }
       setMessage('Registration successful! Please check your email to confirm your account.');
     }
     setLoading(false);
@@ -49,9 +54,9 @@ export default function SignUp() {
     <AuthLayout>
       <div className="flex flex-col items-center w-full">
         <Logo className="mb-8" />
-        <h2 className="text-2xl font-bold mb-2">Create your account</h2>
-        <p className="mb-6 text-gray-500">
-          Or <Link href="/signin" className="text-blue-600 hover:underline">sign in to your existing account</Link>
+        <h2 className="text-3xl font-bold mb-2">Create your account</h2>
+        <p className="mb-8 text-lg text-white">
+          Or <Link href="/signin" className="hover:underline font-medium text-white">sign in to your existing account</Link>
         </p>
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-8">
           <div className="flex flex-col gap-6">
