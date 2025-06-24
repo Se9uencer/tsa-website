@@ -79,73 +79,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#0a101f] text-white flex flex-col">
-      {/* Top Navigation Bar */}
-      <nav className="fixed top-0 left-0 w-full z-30 bg-[#181e29] border-b border-[#232a3a] shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 flex items-center justify-between h-16">
-          {/* Left: Logo/Text */}
-          <div className="flex items-center gap-2">
-            <Logo className="w-8 h-8 text-blue-500" />
-            <Link href="/dashboard" className="font-bold text-lg tracking-wide hover:text-blue-400 transition">TSA Portal</Link>
-          </div>
-          {/* Center: Nav Links (hidden on mobile) */}
-          <div className="hidden md:flex gap-6">
-            {navLinks.map(link => (
-              <a key={link.name} href={link.href} className="text-white hover:text-blue-400 font-medium transition">
-                {link.name}
-              </a>
-            ))}
-          </div>
-          {/* Right: Profile Dropdown (existing) */}
-          <div className="flex items-center gap-2">
-            {/* Hamburger for mobile */}
-            <button className="md:hidden p-2 rounded hover:bg-blue-900/30 transition" onClick={() => setNavOpen(!navOpen)}>
-              {navOpen ? <XMarkIcon className="w-6 h-6" /> : <Bars3Icon className="w-6 h-6" />}
-            </button>
-            <div className="relative flex items-center gap-2">
-              <img
-                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=3b82f6&color=fff&size=64`}
-                alt="Profile"
-                className="w-10 h-10 rounded-full border-2 border-blue-500 shadow cursor-pointer"
-                onClick={() => setDropdownOpen((open) => !open)}
-              />
-              <span className="font-semibold text-base hidden sm:inline">{userName}</span>
-              <button
-                className="p-1 rounded-full hover:bg-blue-900/30 transition"
-                onClick={() => setDropdownOpen((open) => !open)}
-              >
-                <ChevronDownIcon className="w-5 h-5 text-blue-400" />
-              </button>
-              {/* Dropdown Menu */}
-              <div className={`absolute right-0 top-full mt-2 w-56 bg-[#23232a] border border-[#232a3a] rounded-xl shadow-2xl z-20 transition-all duration-200 ${dropdownOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
-                style={{ minWidth: '14rem' }}
-              >
-                <div className="px-4 py-2 text-xs text-gray-400 border-b border-[#232a3a]">Signed in as <span className="font-semibold text-white">{userName}</span></div>
-                <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white" onClick={() => { setShowProfileModal(true); setDropdownOpen(false); }}>
-                  <UserIcon className="w-5 h-5 text-gray-300" /> Your Profile
-                </button>
-                <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white" onClick={() => { setShowSettingsModal(true); setDropdownOpen(false); }}>
-                  <Cog6ToothIcon className="w-5 h-5 text-gray-300" /> Settings
-                </button>
-                <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white rounded-b-xl" onClick={handleSignOut}>
-                  <ArrowRightOnRectangleIcon className="w-5 h-5 text-gray-300" /> Sign out
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Mobile Nav Drawer */}
-        {navOpen && (
-          <div className="md:hidden bg-[#181e29] border-t border-[#232a3a] shadow-lg">
-            <div className="flex flex-col gap-2 px-4 py-4">
-              {navLinks.map(link => (
-                <a key={link.name} href={link.href} className="text-white hover:text-blue-400 font-medium transition py-2">
-                  {link.name}
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-      </nav>
 
       {/* Spacer for nav */}
       <div className="h-24" />
@@ -191,7 +124,12 @@ export default function Dashboard() {
             style={{ boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}
           >
             <button className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow hover:bg-blue-900/30 transition">View All Events</button>
-            <button className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow hover:bg-blue-900/30 transition">My Profile</button>
+            <button
+              className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow hover:bg-blue-900/30 transition"
+              onClick={() => router.push('/profile')}
+            >
+              My Profile
+            </button>
             <button className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow hover:bg-blue-900/30 transition">Submit Project</button>
             <button className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow hover:bg-blue-900/30 transition">Message an Officer</button>
           </div>
@@ -277,70 +215,6 @@ export default function Dashboard() {
           </div>
         )}
       </div>
-
-      {/* Modals */}
-      {/* View Profile Modal */}
-      {showProfileModal && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
-          <div className="bg-[#181e29] rounded-2xl shadow-2xl border border-[#232a3a] p-8 w-full max-w-md relative animate-fade-in">
-            <button className="absolute top-4 right-4 text-gray-400 hover:text-white" onClick={() => setShowProfileModal(false)}>&times;</button>
-            <div className="flex flex-col items-center gap-4">
-              <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=3b82f6&color=fff&size=96`} alt="Profile" className="w-20 h-20 rounded-full border-2 border-blue-500 shadow" />
-              <div className="text-xl font-bold">{userName}</div>
-              <div className="text-gray-400">{user?.email}</div>
-              <div className="text-gray-400">Grade: 12</div>
-              <div className="text-gray-400">Role: Member</div>
-              <button className="mt-4 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition" onClick={() => { setShowProfileModal(false); setShowEditProfileModal(true); }}>Edit Profile</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Edit Profile Modal */}
-      {showEditProfileModal && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
-          <div className="bg-[#181e29] rounded-2xl shadow-2xl border border-[#232a3a] p-8 w-full max-w-md relative animate-fade-in">
-            <button className="absolute top-4 right-4 text-gray-400 hover:text-white" onClick={() => setShowEditProfileModal(false)}>&times;</button>
-            <div className="text-xl font-bold mb-4">Edit Profile</div>
-            <form className="flex flex-col gap-4">
-              <input className="px-4 py-2 rounded-lg bg-[#232a3a] border border-[#232a3a] text-white" placeholder="Full Name" defaultValue={userName} />
-              <input className="px-4 py-2 rounded-lg bg-[#232a3a] border border-[#232a3a] text-white" placeholder="Email" defaultValue={user?.email} />
-              <input className="px-4 py-2 rounded-lg bg-[#232a3a] border border-[#232a3a] text-white" placeholder="Grade" defaultValue="12" />
-              <select className="px-4 py-2 rounded-lg bg-[#232a3a] border border-[#232a3a] text-white">
-                <option>Member</option>
-                <option>Officer</option>
-              </select>
-              <div className="flex gap-2 mt-2">
-                <button type="button" className="flex-1 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition" onClick={() => setShowEditProfileModal(false)}>Save</button>
-                <button type="button" className="flex-1 py-2 rounded-lg bg-[#232a3a] text-white border border-[#232a3a] hover:bg-blue-900/30 transition" onClick={() => setShowEditProfileModal(false)}>Cancel</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      {/* Settings Modal */}
-      {showSettingsModal && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
-          <div className="bg-[#181e29] rounded-2xl shadow-2xl border border-[#232a3a] p-8 w-full max-w-md relative animate-fade-in">
-            <button className="absolute top-4 right-4 text-gray-400 hover:text-white" onClick={() => setShowSettingsModal(false)}>&times;</button>
-            <div className="text-xl font-bold mb-4">Settings</div>
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <span>Email Notifications</span>
-                <input type="checkbox" className="form-checkbox h-5 w-5 text-blue-500 rounded" defaultChecked />
-              </div>
-              <div className="flex items-center justify-between">
-                <span>SMS Updates</span>
-                <input type="checkbox" className="form-checkbox h-5 w-5 text-blue-500 rounded" />
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Dark Mode</span>
-                <input type="checkbox" className="form-checkbox h-5 w-5 text-blue-500 rounded" defaultChecked />
-              </div>
-              <button className="mt-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition" onClick={() => setShowSettingsModal(false)}>Save Changes</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 } 
