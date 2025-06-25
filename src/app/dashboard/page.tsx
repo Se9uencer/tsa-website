@@ -9,9 +9,9 @@ import { Fragment } from 'react';
 import Link from 'next/link';
 
 const placeholderEvents = [
-  { id: 1, title: 'TSA Regional Conference', date: '2024-07-15' },
-  { id: 2, title: 'STEM Workshop', date: '2024-08-02' },
-  { id: 3, title: 'Leadership Training', date: '2024-09-10' },
+  { id: 1, title: 'TSA Regional Conference', date: '2024-07-15', type: 'conference', urgency: 'high', description: 'Annual regional TSA conference with competitions and workshops. This is a major event where teams from different schools compete in various STEM categories.' },
+  { id: 2, title: 'STEM Workshop', date: '2024-08-02', type: 'workshop', urgency: 'medium', description: 'Hands-on STEM workshop focusing on robotics and programming. Learn new skills and work on exciting projects with fellow TSA members.' },
+  { id: 3, title: 'Leadership Training', date: '2024-09-10', type: 'meeting', urgency: 'low', description: 'Leadership development session for current and aspiring TSA officers. Learn about team management, event planning, and effective communication.' },
 ];
 
 const placeholderAnnouncements = [
@@ -64,6 +64,11 @@ export default function Dashboard() {
     router.replace('/signin');
   };
 
+  const handleViewEventDetails = (event: any) => {
+    // Navigate to calendar page with event details
+    router.push(`/calendar?event=${event.id}`);
+  };
+
   if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
 
   // Placeholder for user's name
@@ -109,7 +114,12 @@ export default function Dashboard() {
                       <div className="font-medium">{event.title}</div>
                       <div className="text-gray-400 text-sm">{event.date}</div>
                     </div>
-                    <button className="mt-2 sm:mt-0 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition">View Details</button>
+                    <button 
+                      onClick={() => handleViewEventDetails(event)}
+                      className="mt-2 sm:mt-0 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition"
+                    >
+                      View Details
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -123,7 +133,12 @@ export default function Dashboard() {
             className="flex flex-wrap gap-4 justify-between bg-[#181e29] rounded-2xl p-4 shadow-lg border border-[#232a3a] relative"
             style={{ boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}
           >
-            <button className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow hover:bg-blue-900/30 transition">View All Events</button>
+            <button 
+              onClick={() => router.push('/calendar')}
+              className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow hover:bg-blue-900/30 transition"
+            >
+              View All Events
+            </button>
             <button
               className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow hover:bg-blue-900/30 transition"
               onClick={() => router.push('/profile')}
@@ -165,8 +180,9 @@ export default function Dashboard() {
         </div>
         <div
           ref={calendarRef}
-          className="flex overflow-x-auto gap-2 py-4 scrollbar-thin scrollbar-thumb-blue-900 scrollbar-track-transparent rounded-2xl relative"
+          className="flex overflow-x-auto gap-2 py-4 scrollbar-thin scrollbar-thumb-blue-900 scrollbar-track-transparent rounded-2xl relative cursor-pointer"
           style={{ WebkitOverflowScrolling: 'touch', boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}
+          onClick={() => router.push('/calendar')}
         >
           {days.map(day => {
             const isEvent = eventDates.includes(day);
@@ -183,16 +199,18 @@ export default function Dashboard() {
                 }}
                 onMouseLeave={() => setTooltip(null)}
                 onClick={e => {
+                  e.stopPropagation(); // Prevent triggering the parent onClick
                   if (isEvent) {
                     const rect = (e.target as HTMLElement).getBoundingClientRect();
                     setTooltip({ x: rect.left + rect.width / 2, y: rect.top, event });
                   }
+                  router.push('/calendar');
                 }}
               >
                 <div
                   className={`w-10 h-10 flex items-center justify-center rounded-full text-lg font-semibold
                     ${isEvent ? 'bg-gradient-to-br from-blue-500 to-violet-500 text-white shadow-lg' : 'bg-[#232a3a] text-gray-300'}
-                    border border-[#232a3a] transition`}
+                    border border-[#232a3a] transition hover:scale-105`}
                 >
                   {day}
                 </div>

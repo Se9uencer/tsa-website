@@ -12,7 +12,7 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={raleway.variable}>
-      <body className="font-sans bg-[#0a101f] text-white">
+      <body className="font-sans bg-[#0a101f] text-white" suppressHydrationWarning={true}>
         <BodyWithNav>{children}</BodyWithNav>
       </body>
     </html>
