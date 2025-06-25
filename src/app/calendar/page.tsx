@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/solid';
+import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, XMarkIcon, BellIcon } from '@heroicons/react/24/solid';
 import { supabase } from '@/lib/supabaseClient';
 import { useSearchParams } from 'next/navigation';
 
@@ -12,6 +12,11 @@ interface Event {
   urgency: 'low' | 'medium' | 'high';
   description?: string;
   customCategory?: string;
+  notifications?: {
+    enabled: boolean;
+    reminderTime: number; // minutes before event
+    emailSent?: boolean;
+  };
 }
 
 const eventTypes: Record<string, { label: string; color: string }> = {
@@ -27,6 +32,16 @@ const urgencyColors = {
   high: 'border-red-400'
 };
 
+const notificationOptions = [
+  { value: 0, label: 'No reminder' },
+  { value: 15, label: '15 minutes before' },
+  { value: 30, label: '30 minutes before' },
+  { value: 60, label: '1 hour before' },
+  { value: 1440, label: '1 day before' },
+  { value: 2880, label: '2 days before' },
+  { value: 10080, label: '1 week before' }
+];
+
 export default function Calendar() {
   const searchParams = useSearchParams();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -40,7 +55,11 @@ export default function Calendar() {
     type: 'meeting' as Event['type'],
     urgency: 'medium' as Event['urgency'],
     description: '',
-    customCategory: ''
+    customCategory: '',
+    notifications: {
+      enabled: false,
+      reminderTime: 60
+    }
   });
 
   // Sample events - in a real app, these would come from the database
@@ -52,7 +71,12 @@ export default function Calendar() {
         date: '2024-12-15',
         type: 'conference',
         urgency: 'high',
-        description: 'Annual regional TSA conference with competitions and workshops. This is a major event where teams from different schools compete in various STEM categories including robotics, web design, and engineering challenges.'
+        description: 'Annual regional TSA conference with competitions and workshops. This is a major event where teams from different schools compete in various STEM categories including robotics, web design, and engineering challenges.',
+        notifications: {
+          enabled: true,
+          reminderTime: 10080, // 1 week before
+          emailSent: false
+        }
       },
       {
         id: '2',
@@ -60,7 +84,12 @@ export default function Calendar() {
         date: '2024-12-20',
         type: 'due_date',
         urgency: 'high',
-        description: 'Final deadline for all competition project submissions. Make sure all documentation, code, and presentation materials are submitted by this date. Late submissions will not be accepted.'
+        description: 'Final deadline for all competition project submissions. Make sure all documentation, code, and presentation materials are submitted by this date. Late submissions will not be accepted.',
+        notifications: {
+          enabled: true,
+          reminderTime: 1440, // 1 day before
+          emailSent: false
+        }
       },
       {
         id: '3',
@@ -68,7 +97,12 @@ export default function Calendar() {
         date: '2024-12-10',
         type: 'meeting',
         urgency: 'medium',
-        description: 'Regular weekly TSA club meeting where we discuss upcoming events, project progress, and team coordination. All members are encouraged to attend and share updates.'
+        description: 'Regular weekly TSA club meeting where we discuss upcoming events, project progress, and team coordination. All members are encouraged to attend and share updates.',
+        notifications: {
+          enabled: true,
+          reminderTime: 30, // 30 minutes before
+          emailSent: false
+        }
       },
       {
         id: '4',
@@ -76,7 +110,12 @@ export default function Calendar() {
         date: '2024-12-25',
         type: 'workshop',
         urgency: 'low',
-        description: 'Hands-on STEM workshop for members focusing on advanced programming concepts and robotics engineering. This workshop will help prepare teams for upcoming competitions.'
+        description: 'Hands-on STEM workshop for members focusing on advanced programming concepts and robotics engineering. This workshop will help prepare teams for upcoming competitions.',
+        notifications: {
+          enabled: false,
+          reminderTime: 60,
+          emailSent: false
+        }
       }
     ];
     setEvents(sampleEvents);
@@ -132,6 +171,38 @@ export default function Calendar() {
     return eventTypes[event.type] || eventTypes.meeting;
   };
 
+  const sendNotificationEmail = async (event: Event) => {
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) return;
+
+      // In a real implementation, you would:
+      // 1. Use Supabase Edge Functions or a service like Resend/SendGrid
+      // 2. Send the email with event details
+      // 3. Update the event to mark email as sent
+      
+      console.log(`Sending notification email to ${user.email} for event: ${event.title}`);
+      
+      // For now, we'll just simulate the email being sent
+      const updatedEvents = events.map(e => 
+        e.id === event.id 
+          ? { 
+              ...e, 
+              notifications: { 
+                ...e.notifications, 
+                emailSent: true 
+              } as Event['notifications']
+            }
+          : e
+      );
+      setEvents(updatedEvents);
+      
+    } catch (error) {
+      console.error('Error sending notification email:', error);
+    }
+  };
+
   const handleAddEvent = () => {
     if (!selectedDate || !newEvent.title) return;
     
@@ -142,12 +213,23 @@ export default function Calendar() {
       type: newEvent.type,
       urgency: newEvent.urgency,
       description: newEvent.description,
-      customCategory: newEvent.customCategory
+      customCategory: newEvent.customCategory,
+      notifications: newEvent.notifications
     };
     
     setEvents([...events, event]);
     setShowAddModal(false);
-    setNewEvent({ title: '', type: 'meeting', urgency: 'medium', description: '', customCategory: '' });
+    setNewEvent({ 
+      title: '', 
+      type: 'meeting', 
+      urgency: 'medium', 
+      description: '', 
+      customCategory: '',
+      notifications: {
+        enabled: false,
+        reminderTime: 60
+      }
+    });
     setSelectedDate('');
   };
 
@@ -167,6 +249,19 @@ export default function Calendar() {
     if (selectedEvent?.id === eventId) {
       setShowEventDetailModal(false);
       setSelectedEvent(null);
+    }
+  };
+
+  const updateEventNotifications = (eventId: string, notifications: Event['notifications']) => {
+    const updatedEvents = events.map(event => 
+      event.id === eventId 
+        ? { ...event, notifications }
+        : event
+    );
+    setEvents(updatedEvents);
+    
+    if (selectedEvent?.id === eventId) {
+      setSelectedEvent({ ...selectedEvent, notifications });
     }
   };
 
@@ -266,9 +361,14 @@ export default function Calendar() {
                               key={`${event.id}-${eventIndex}`}
                               className={`w-2 h-2 rounded-full bg-gradient-to-r ${eventTypeInfo.color} ${
                                 urgencyColors[event.urgency]
-                              } border-2`}
+                              } border-2 relative`}
                               title={`${event.title} (${eventTypeInfo.label})`}
-                            />
+                            >
+                              {/* Notification indicator */}
+                              {event.notifications?.enabled && (
+                                <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-yellow-400 rounded-full" />
+                              )}
+                            </div>
                           );
                         })}
                         {dayEvents.length > 3 && (
@@ -287,6 +387,9 @@ export default function Calendar() {
                             return (
                               <div key={event.id} className="text-xs text-gray-300">
                                 • {event.title} ({eventTypeInfo.label})
+                                {event.notifications?.enabled && (
+                                  <span className="text-yellow-400 ml-1">🔔</span>
+                                )}
                               </div>
                             );
                           })}
@@ -324,6 +427,16 @@ export default function Calendar() {
                   </div>
                 ))}
               </div>
+
+              <h3 className="text-xl font-semibold mb-4 mt-6">Notifications</h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-full bg-yellow-400 relative">
+                    <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-yellow-400 rounded-full" />
+                  </div>
+                  <span className="text-sm">Email notifications enabled</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -343,6 +456,7 @@ export default function Calendar() {
                     <th className="text-left p-3 text-gray-400 font-medium">Event</th>
                     <th className="text-left p-3 text-gray-400 font-medium">Type</th>
                     <th className="text-left p-3 text-gray-400 font-medium">Urgency</th>
+                    <th className="text-left p-3 text-gray-400 font-medium">Notifications</th>
                     <th className="text-left p-3 text-gray-400 font-medium">Description</th>
                     <th className="text-left p-3 text-gray-400 font-medium">Actions</th>
                   </tr>
@@ -352,6 +466,7 @@ export default function Calendar() {
                     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                     .map(event => {
                       const eventTypeInfo = getEventTypeInfo(event);
+                      const notificationOption = notificationOptions.find(opt => opt.value === event.notifications?.reminderTime);
                       return (
                         <tr 
                           key={event.id} 
@@ -379,6 +494,20 @@ export default function Calendar() {
                             <span className={`px-3 py-1 rounded-full text-xs font-medium border-2 ${urgencyColors[event.urgency]} capitalize`}>
                               {event.urgency}
                             </span>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-2">
+                              {event.notifications?.enabled ? (
+                                <>
+                                  <BellIcon className="w-4 h-4 text-yellow-400" />
+                                  <span className="text-xs text-gray-300">
+                                    {notificationOption?.label}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-xs text-gray-500">None</span>
+                              )}
+                            </div>
                           </td>
                           <td className="p-3">
                             <div className="text-sm text-gray-400 max-w-xs truncate">
@@ -496,6 +625,55 @@ export default function Calendar() {
                 />
               </div>
 
+              {/* Notification Settings */}
+              <div className="border-t border-[#232a3a] pt-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <BellIcon className="w-4 h-4 text-yellow-400" />
+                  <label className="text-sm font-medium">Email Notifications</label>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={newEvent.notifications.enabled}
+                      onChange={(e) => setNewEvent({
+                        ...newEvent,
+                        notifications: {
+                          ...newEvent.notifications,
+                          enabled: e.target.checked
+                        }
+                      })}
+                      className="rounded border-[#3a4151] bg-[#232a3a] text-blue-500 focus:ring-blue-500"
+                    />
+                    <span className="text-sm">Enable email reminders</span>
+                  </label>
+
+                  {newEvent.notifications.enabled && (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Reminder Time</label>
+                      <select
+                        value={newEvent.notifications.reminderTime}
+                        onChange={(e) => setNewEvent({
+                          ...newEvent,
+                          notifications: {
+                            ...newEvent.notifications,
+                            reminderTime: parseInt(e.target.value)
+                          }
+                        })}
+                        className="w-full p-2 rounded-lg bg-[#232a3a] border border-[#3a4151] focus:border-blue-500 focus:outline-none text-sm"
+                      >
+                        {notificationOptions.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="flex gap-2 pt-3">
                 <button
                   onClick={() => setShowAddModal(false)}
@@ -563,6 +741,65 @@ export default function Calendar() {
                   <span className={`px-3 py-1 rounded-full text-xs font-medium border-2 ${urgencyColors[selectedEvent.urgency]} capitalize`}>
                     {selectedEvent.urgency}
                   </span>
+                </div>
+              </div>
+
+              {/* Notification Settings */}
+              <div className="border-t border-[#232a3a] pt-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <BellIcon className="w-4 h-4 text-yellow-400" />
+                  <label className="text-sm font-medium text-gray-400">Email Notifications</label>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedEvent.notifications?.enabled || false}
+                      onChange={(e) => updateEventNotifications(selectedEvent.id, {
+                        enabled: e.target.checked,
+                        reminderTime: selectedEvent.notifications?.reminderTime || 60,
+                        emailSent: selectedEvent.notifications?.emailSent
+                      })}
+                      className="rounded border-[#3a4151] bg-[#232a3a] text-blue-500 focus:ring-blue-500"
+                    />
+                    <span className="text-sm">Enable email reminders</span>
+                  </label>
+
+                  {selectedEvent.notifications?.enabled && (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Reminder Time</label>
+                      <select
+                        value={selectedEvent.notifications.reminderTime || 60}
+                        onChange={(e) => updateEventNotifications(selectedEvent.id, {
+                          enabled: selectedEvent.notifications?.enabled || false,
+                          reminderTime: parseInt(e.target.value),
+                          emailSent: selectedEvent.notifications?.emailSent
+                        })}
+                        className="w-full p-2 rounded-lg bg-[#232a3a] border border-[#3a4151] focus:border-blue-500 focus:outline-none text-sm"
+                      >
+                        {notificationOptions.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {selectedEvent.notifications?.enabled && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => sendNotificationEmail(selectedEvent)}
+                        className="px-3 py-1 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 transition text-blue-400 text-xs"
+                      >
+                        Send Test Email
+                      </button>
+                      {selectedEvent.notifications.emailSent && (
+                        <span className="text-xs text-green-400">✓ Email sent</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
