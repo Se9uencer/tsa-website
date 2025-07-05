@@ -42,10 +42,10 @@ export default function Navbar() {
       <nav className="fixed top-0 left-0 w-full z-30 bg-[#181e29] border-b border-[#232a3a] shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 flex items-center justify-between h-16">
           {/* Left: Logo/Text */}
-          <div className="flex items-center gap-2">
-            <Logo className="w-8 h-8 text-blue-500" />
-            <Link href="/dashboard" className="font-bold text-lg text-white tracking-wide hover:text-blue-400 transition">TSA Portal</Link>
-          </div>
+          <Link href="/dashboard" className="flex items-center group">
+            <Logo className="w-20 h-20 text-blue-500 group-hover:opacity-80 transition" />
+            <span className="font-bold text-lg text-white tracking-wide group-hover:text-blue-400 transition">Portal</span>
+          </Link>
           {/* Center: Nav Links (hidden on mobile) */}
           <div className="hidden md:flex gap-6">
             {navLinks.map(link => (

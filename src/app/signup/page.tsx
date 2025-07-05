@@ -53,10 +53,10 @@ export default function SignUp() {
   return (
     <AuthLayout>
       <div className="flex flex-col items-center w-full">
-        <Logo className="mb-8" />
-        <h2 className="text-3xl font-bold mb-2">Create your account</h2>
-        <p className="mb-8 text-lg text-white">
-          Or <Link href="/signin" className="hover:underline font-medium text-white">sign in to your existing account</Link>
+        <Logo className="w-20 h-20" />
+        <h2 className="text-3xl text-white font-bold mb-2">Create your account</h2>
+        <p className="mb-8 text-lg text-gray-300">
+          Or <Link href="/signin" className="hover:underline font-medium text-blue-300">sign in to your existing account</Link>
         </p>
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-8">
           <div className="flex flex-col gap-6">

@@ -30,14 +30,14 @@ export default function ForgotPassword() {
   return (
     <AuthLayout>
       <div className="flex flex-col items-center">
-        <Logo className="mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Forgot your password?</h2>
+        <Logo className="w-20 h-20" />
+        <h2 className="text-2xl font-bold mb-2 text-white">Forgot your password?</h2>
         <p className="mb-6 text-gray-500">No problem. Enter your email address below.</p>
         <form onSubmit={handleSubmit} className="w-full space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium">Email address</label>
+            <label htmlFor="email" className="block text-sm text-white font-medium">Email address</label>
             <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required disabled={loading}
-              className="mt-1 w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:border-blue-300" />
+              className="mt-1 w-full px-3 py-2 rounded border border-[#232a3a] bg-[#181e29] text-white shadow-lg focus:outline-none focus:border-blue-400 focus:ring-0 placeholder-red-400" />
           </div>
           {error && <div className="text-red-600 text-sm">{error}</div>}
           {message && <div className="text-green-600 text-sm">{message}</div>}

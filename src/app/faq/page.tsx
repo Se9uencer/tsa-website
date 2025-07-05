@@ -63,7 +63,7 @@ export default function FAQ() {
               style={{ boxShadow: '0 0 10px 0 #3b82f6, 0 0 10px 0 #8b5cf6, 0 0 0 1px #232a3a' }}
             >
               <button
-                className="w-full flex items-center justify-between px-8 py-5 focus:outline-none"
+                className="w-full flex items-center justify-between px-8 py-5 focus:outline-none hover:cursor-pointer"
                 onClick={() => toggleOpen(idx)}
               >
                 <span className="text-lg md:text-xl font-semibold text-blue-400">

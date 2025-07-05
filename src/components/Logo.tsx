@@ -1,7 +1,14 @@
-import { GlobeAltIcon } from '@heroicons/react/24/solid';
+import Image from 'next/image';
 
 export default function Logo({ className = '' }: { className?: string }) {
   return (
-    <GlobeAltIcon className={`w-12 h-12 text-blue-600 dark:text-blue-400 ${className}`} />
+    <Image
+      src="/images/ncTSALogo.png"
+      alt="TSA"
+      width={48}
+      height={48}
+      className={className}
+      priority
+    />
   );
 } 

@@ -7,7 +7,7 @@ export default function Verified() {
   return (
     <AuthLayout>
       <div className="flex flex-col items-center w-full text-center">
-        <Logo className="mb-8" />
+        <Logo className="w-20 h-20" />
         <h1 className="text-3xl font-bold mb-4 text-white">Email Verified!</h1>
         <p className="text-lg text-gray-300 mb-8">Your email has been successfully verified.<br />You can now sign in to your account.</p>
         <Link

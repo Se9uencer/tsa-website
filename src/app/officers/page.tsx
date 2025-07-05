@@ -69,7 +69,7 @@ export default function Officers() {
   return (
     <div className="min-h-screen bg-[#0a101f] px-4 flex flex-col items-center">
       <div className="h-16" />
-      <h1 className="text-4xl md:text-5xl font-bold text-white mt-12 mb-12 text-center">Meet your board for the 2025-26 school year!</h1>
+      <h1 className="text-4xl md:text-4xl font-bold text-white mt-15 mb-15 text-center">Meet the North Creek TSA Board!</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 w-full max-w-6xl">
         {officers.map((officer, i) => (
           <div
@@ -81,10 +81,10 @@ export default function Officers() {
               <Image src={officer.image} alt="Image of officer" width={120} height={120} className="w-28 h-28 object-contain" />
             </div>
             <div className="flex-1 flex flex-col justify-center">
-              <div className="text-3xl font-bold text-white leading-tight">{officer.name}</div>
-              <div className={`text-xl font-semibold mt-1 ${officer.positionColor}`}>{officer.position}</div>
-              <div className="mt-4 text-lg font-semibold text-white">Favorite Event: <span className={officer.favoriteEventColor}>{officer.favoriteEvent}</span></div>
-              <div className="text-base text-white font-normal line-clamp-4 overflow-hidden">
+              <div className="text-2xl font-bold text-white leading-tight">{officer.name}</div>
+              <div className={`text-lg font-semibold mt-1 ${officer.positionColor}`}>{officer.position}</div>
+              <div className="mt-4 text-lg font-medium text-white">Favorite Event: <span className={officer.favoriteEventColor}>{officer.favoriteEvent}</span></div>
+              <div className="text-base text-white font-sm line-clamp-4 overflow-hidden">
                 {getBioWithReadMore(officer.bio, () => setModalIndex(i))}
               </div>
             </div>

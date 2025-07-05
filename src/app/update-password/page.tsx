@@ -44,7 +44,7 @@ export default function UpdatePassword() {
   return (
     <AuthLayout>
       <div className="flex flex-col items-center">
-        <Logo className="mb-4" />
+        <Logo className="w-20 h-20" />
         <h2 className="text-2xl font-bold mb-2">Update Your Password</h2>
         <p className="mb-6 text-gray-500">Enter and confirm a new password for your account.</p>
         <form onSubmit={handleSubmit} className="w-full space-y-4">
