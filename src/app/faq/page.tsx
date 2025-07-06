@@ -13,7 +13,7 @@ const initialQuestions = [
     answer: 'You can contact North Creek TSA by emailing northcreektsa@gmail.com or reaching out through our website contact form.'
   },
   {
-    question: 'How can I contact North Creek TSA?',
+    question: 'How can I contact North Creek TSA? How can I contact North Creek TSA?',
     answer: 'You can contact North Creek TSA by emailing northcreektsa@gmail.com or reaching out through our website contact form.'
   },
   {
@@ -40,7 +40,7 @@ export default function FAQ() {
   return (
     <div className="min-h-screen flex flex-col items-center py-30 px-2 bg-[#0a101f]">
       <h1 className="text-4xl font-bold text-white mb-10 text-center">Frequently Asked Questions</h1>
-      <div className="w-full max-w-2xl mb-15">
+      <div className="w-full max-w-2xl mb-15 px-4 md:px-0">
         <div className="flex items-center bg-[#181e29] border border-[#232a3a] rounded-lg px-6 py-2" style={{ boxShadow: '0 0 10px 0 #5647fd, 0 0 10px 0 #8b5cf6, 0 0 0 1px #232a3a' }}>
           <input
             type="text"
@@ -52,7 +52,7 @@ export default function FAQ() {
           <FiSearch className="text-xl text-purple-300" />
         </div>
       </div>
-      <div className="w-full max-w-2xl flex flex-col gap-6">
+      <div className="w-full max-w-2xl flex flex-col gap-6 px-4 md:px-0">
         {filteredQuestions.length === 0 ? (
           <div className="text-center text-lg text-gray-300">No questions found.</div>
         ) : (
@@ -66,7 +66,7 @@ export default function FAQ() {
                 className="w-full flex items-center justify-between px-8 py-5 focus:outline-none hover:cursor-pointer"
                 onClick={() => toggleOpen(idx)}
               >
-                <span className="text-lg md:text-xl font-semibold text-blue-400">
+                <span className="text-lg md:text-xl font-semibold text-blue-400 text-start max-w-[80%]">
                   <span className="text-purple-300">Q:</span> {q.question}
                 </span>
                 <span className="text-2xl text-purple-300">

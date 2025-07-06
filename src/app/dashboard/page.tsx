@@ -180,7 +180,7 @@ export default function Dashboard() {
         </div>
         <div
           ref={calendarRef}
-          className="flex overflow-x-auto gap-2 py-4 scrollbar-thin scrollbar-thumb-blue-900 scrollbar-track-transparent rounded-2xl relative cursor-pointer"
+          className="flex overflow-x-auto gap-2 px-4 py-4 scrollbar-thin scrollbar-thumb-blue-900 scrollbar-track-transparent rounded-2xl relative cursor-pointer mb-10 md:mb-0"
           style={{ WebkitOverflowScrolling: 'touch', boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}
           onClick={() => router.push('/calendar')}
         >

@@ -57,36 +57,36 @@ export default function Profile() {
   const [badgesPerRow, setBadgesPerRow] = useState(3);
   const [badgeRows, setBadgeRows] = useState(1);
   const badgeContainerRef = useRef<HTMLDivElement>(null);
-  const badgeSize = 90; // px, adjust if your badge size changes
+  const badgeSize = 80; // px, adjust if your badge size changes
   const badgeGap = 16; // px, adjust if your gap changes
   const badgeVerticalPadding = 32; // px, adjust for vertical padding in the container
 
   // Responsive badge grid calculation
-  useLayoutEffect(() => {
-    function calculateBadgesFit() {
-      console.log("start");
-      if (!badgeContainerRef.current) return;
-      console.log("made it?");
-      const container = badgeContainerRef.current;
-      const width = container.offsetWidth;
-      const height = container.offsetHeight;
-      // Calculate badges per row
-      // const perRow = Math.max(1, Math.floor((width + badgeGap) / (badgeSize + badgeGap)));
-      // Calculate rows
-      const perRow = 3;
-      const totalBadges = userData.badges.length;
-      const neededRows = Math.ceil(totalBadges / perRow);
-      const maxRowsFit = Math.floor((height + badgeGap - badgeVerticalPadding) / (badgeSize + badgeGap));
-      const rows = Math.max(1, Math.min(neededRows, maxRowsFit));
+  // useLayoutEffect(() => {
+  //   function calculateBadgesFit() {
+  //     console.log("start");
+  //     if (!badgeContainerRef.current) return;
+  //     console.log("made it?");
+  //     const container = badgeContainerRef.current;
+  //     const width = container.offsetWidth;
+  //     const height = container.offsetHeight;
+  //     // Calculate badges per row
+  //     // const perRow = Math.max(1, Math.floor((width + badgeGap) / (badgeSize + badgeGap)));
+  //     // Calculate rows
+  //     const perRow = 3;
+  //     const totalBadges = userData.badges.length;
+  //     const neededRows = Math.ceil(totalBadges / perRow);
+  //     const maxRowsFit = Math.floor((height + badgeGap - badgeVerticalPadding) / (badgeSize + badgeGap));
+  //     const rows = Math.max(1, Math.min(neededRows, maxRowsFit));
 
-      console.log(rows);
-      setBadgesPerRow(3);
-      setBadgeRows(rows);
-    }
-    calculateBadgesFit();
-    window.addEventListener('resize', calculateBadgesFit);
-    return () => window.removeEventListener('resize', calculateBadgesFit);
-  }, []);
+  //     console.log(rows);
+  //     setBadgesPerRow(3);
+  //     setBadgeRows(rows);
+  //   }
+  //   calculateBadgesFit();
+  //   window.addEventListener('resize', calculateBadgesFit);
+  //   return () => window.removeEventListener('resize', calculateBadgesFit);
+  // }, []);
 
   const badgesPerPage = badgesPerRow * badgeRows;
   const canScrollLeft = badgeStartIdx > 0;
@@ -102,11 +102,11 @@ export default function Profile() {
       {/* Spacer for navbar height */}
       <div className="h-16 w-full flex-shrink-0" />
       <div className="flex-grow flex items-center justify-center px-4 h-full">
-        <div className="w-full max-w-5xl flex flex-col md:flex-row gap-10 h-[70vh]">
+        <div className="w-full max-w-5xl flex flex-col md:flex-row gap-10 md:h-[70vh]">
           {/* Left: Profile Info & Badges */}
           <div className="flex-1 flex flex-col">
             {/* Profile Header & XP Box */}
-            <div className="w-full max-w-lg bg-[#181e29] rounded-3xl border border-[#232a3a] shadow-lg p-6 flex flex-col gap-6 height-[40%]"
+            <div className="w-full max-w-full md:max-w-lg bg-[#181e29] rounded-3xl border border-[#232a3a] shadow-lg p-6 flex flex-col gap-6 height-[40%] mt-10 md:mt-0"
               style={{ boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}>
               {/* Profile Header */}
               <div className="flex items-center gap-6">
@@ -138,7 +138,7 @@ export default function Profile() {
 
             {/* Badges */}
             <div
-              className="w-full max-w-lg bg-[#181e29] rounded-3xl border border-[#232a3a] shadow-lg p-6 relative flex flex-col max-h-72 overflow-hidden min-h-0 mt-10"
+              className="w-full max-w-full md:max-w-lg bg-[#181e29] rounded-3xl border border-[#232a3a] shadow-lg p-6 relative flex flex-col max-h-72 overflow-hidden min-h-0 mt-10"
               style={{ boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}
               ref={badgeContainerRef}
             >
@@ -186,8 +186,8 @@ export default function Profile() {
           </div>
 
           {/* Right: Events Card */}
-          <div className="flex-1 flex flex-col justify-between items-center min-h-0">
-            <div className="w-full max-w-md bg-[#181e29] rounded-3xl border border-[#232a3a] shadow-lg p-8 flex flex-col h-full min-h-0"
+          <div className="flex-1 flex flex-col justify-between items-center mb-10 md:mb-0">
+            <div className="w-full max-w-full md:max-w-md bg-[#181e29] rounded-3xl border border-[#232a3a] shadow-lg p-8 flex flex-col md:h-full md:min-h-0"
               style={{ boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}>
               <div className="text-3xl font-bold text-white mb-6">Your Events</div>
               <div className="flex flex-col gap-7">

@@ -61,7 +61,7 @@ export default function Navbar() {
           {/* Right: Profile Dropdown (dummy for now) */}
           <div className="flex items-center gap-2">
             {/* Hamburger for mobile */}
-            <button className="md:hidden p-2 rounded hover:bg-blue-900/30 transition" onClick={() => setNavOpen(!navOpen)}>
+            <button className="md:hidden p-2 rounded text-white hover:bg-blue-900/30 transition" onClick={() => setNavOpen(!navOpen)}>
               {navOpen ? <XMarkIcon className="w-6 h-6" /> : <Bars3Icon className="w-6 h-6" />}
             </button>
             <div className="relative flex items-center gap-2">
@@ -83,13 +83,13 @@ export default function Navbar() {
                 style={{ minWidth: '14rem' }}
               >
                 <div className="px-4 py-2 text-xs text-gray-400 border-b border-[#232a3a]">Signed in as <span className="font-semibold text-white">{userName}</span></div>
-                <Link href="/profile" className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white">
+                <Link href="/profile" className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white" onClick={() => setDropdownOpen(false)}>
                   <UserIcon className="w-5 h-5 text-gray-300" /> Your Profile
                 </Link>
                 <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white" onClick={() => { setShowSettingsModal(true); setDropdownOpen(false); }}>
                   <Cog6ToothIcon className="w-5 h-5 text-gray-300" /> Settings
                 </button>
-                <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white rounded-b-xl">
+                <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white rounded-b-xl" onClick={() => setDropdownOpen(false)}>
                   <ArrowRightOnRectangleIcon className="w-5 h-5 text-gray-300" /> Sign out
                 </button>
               </div>
@@ -97,21 +97,20 @@ export default function Navbar() {
           </div>
         </div>
         {/* Mobile Nav Drawer */}
-        {navOpen && (
-          <div className="md:hidden bg-[#181e29] border-t border-[#232a3a] shadow-lg">
-            <div className="flex flex-col gap-2 px-4 py-4">
-              {navLinks.map(link => (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  className={`font-medium transition py-2 ${pathname === link.href ? 'text-blue-400' : 'text-white hover:text-blue-400'}`}
-                >
-                  {link.name}
-                </Link>
-              ))}
-            </div>
+        <div className={`md:hidden bg-[#181e29] border-t border-[#232a3a] shadow-lg transition-all duration-500 ${navOpen ? 'opacity-100 max-h-[500px] pointer-events-auto' : 'opacity-0 max-h-0 pointer-events-none overflow-hidden'}`}>
+          <div className="flex flex-col gap-2 px-4 py-4">
+            {navLinks.map(link => (
+              <Link
+                key={link.name}
+                href={link.href}
+                className={`font-medium transition py-2 ${pathname === link.href ? 'text-blue-400' : 'text-white hover:text-blue-400'}`}
+                onClick={() => setNavOpen(false)}
+              >
+                {link.name}
+              </Link>
+            ))}
           </div>
-        )}
+        </div>
       </nav>
       {/* Modals */}
       {/* Settings Modal */}
