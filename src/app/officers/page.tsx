@@ -1,7 +1,9 @@
 "use client"
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 
 const officers = [
   {
@@ -64,7 +66,18 @@ function getBioWithReadMore(bio: string, onClick: () => void) {
 }
 
 export default function Officers() {
+  const router = useRouter();
   const [modalIndex, setModalIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) {
+        router.replace('/signin');
+      }
+    };
+    checkUser();
+  }, [router]);
 
   return (
     <div className="min-h-screen bg-[#0a101f] px-4 flex flex-col items-center">

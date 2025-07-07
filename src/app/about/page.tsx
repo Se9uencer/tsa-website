@@ -1,5 +1,21 @@
+'use client';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
+
 export default function About() {
+  const router = useRouter();
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) {
+        router.replace('/signin');
+      }
+    };
+    checkUser();
+  }, [router]);
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center text-3xl font-bold text-white bg-[#0a101f]">
       About Page (Coming Soon)

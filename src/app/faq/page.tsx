@@ -1,6 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiSearch, FiPlus, FiMinus } from 'react-icons/fi';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 
 // Mocked questions for now; replace with Supabase fetch in the future
 const initialQuestions = [
@@ -23,8 +25,19 @@ const initialQuestions = [
 ];
 
 export default function FAQ() {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [openIndexes, setOpenIndexes] = useState<number[]>([]);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) {
+        router.replace('/signin');
+      }
+    };
+    checkUser();
+  }, [router]);
 
   // Filter questions by search
   const filteredQuestions = initialQuestions.filter(q =>

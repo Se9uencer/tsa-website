@@ -3,11 +3,23 @@ import Link from 'next/link';
 import { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
 
 export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showEventsModal, setShowEventsModal] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) {
+        router.replace('/signin');
+      }
+    };
+    checkUser();
+  }, [router]);
 
   useEffect(() => {
     const fetchUser = async () => {

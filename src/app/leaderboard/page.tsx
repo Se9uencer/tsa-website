@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState } from "react";
+import { useRouter } from 'next/navigation';
 import { supabase } from "@/lib/supabaseClient";
 
 const tierColors: Record<string, string> = {
@@ -13,8 +14,19 @@ export default function Leaderboard() {
   const [friends, setFriends] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
   // For demo, assume current user id is available (replace with real auth logic)
   const currentUserId = "user-id-demo";
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) {
+        router.replace('/signin');
+      }
+    };
+    checkUser();
+  }, [router]);
 
   useEffect(() => {
     const fetchData = async () => {

@@ -38,6 +38,11 @@ export default function Navbar() {
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.replace('/signin');
+  };
+
   return (
     <>
       <nav className="fixed top-0 left-0 w-full z-30 bg-[#181e29] border-b border-[#232a3a] shadow-lg">
@@ -90,7 +95,7 @@ export default function Navbar() {
                 <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white" onClick={() => { setShowSettingsModal(true); setDropdownOpen(false); }}>
                   <Cog6ToothIcon className="w-5 h-5 text-gray-300" /> Settings
                 </button>
-                <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white rounded-b-xl" onClick={() => setDropdownOpen(false)}>
+                <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white rounded-b-xl" onClick={handleSignOut}>
                   <ArrowRightOnRectangleIcon className="w-5 h-5 text-gray-300" /> Sign out
                 </button>
               </div>
