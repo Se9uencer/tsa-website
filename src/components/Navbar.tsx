@@ -14,6 +14,7 @@ const navLinks = [
   { name: 'Calendar', href: '/calendar' },
   { name: 'Leaderboard', href: '/leaderboard' },
   { name: 'FAQ', href: '/faq' },
+  { name: 'Contact', href: '/contact' },
 ];
 
 export default function Navbar() {
