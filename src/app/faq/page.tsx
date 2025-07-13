@@ -4,30 +4,16 @@ import { FiSearch, FiPlus, FiMinus } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
-// Mocked questions for now; replace with Supabase fetch in the future
-const initialQuestions = [
-  {
-    question: 'How can I contact North Creek TSA?',
-    answer: 'You can contact North Creek TSA by emailing northcreektsa@gmail.com or reaching out through our website contact form.'
-  },
-  {
-    question: 'How can I contact North Creek TSA?',
-    answer: 'You can contact North Creek TSA by emailing northcreektsa@gmail.com or reaching out through our website contact form.'
-  },
-  {
-    question: 'How can I contact North Creek TSA? How can I contact North Creek TSA?',
-    answer: 'You can contact North Creek TSA by emailing northcreektsa@gmail.com or reaching out through our website contact form.'
-  },
-  {
-    question: 'How can I contact North Creek TSA?',
-    answer: 'You can contact North Creek TSA by emailing northcreektsa@gmail.com or reaching out through our website contact form.'
-  },
-];
+// Remove initialQuestions and add FAQ type
+type FAQItem = { question: string; answer: string };
 
 export default function FAQ() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [openIndexes, setOpenIndexes] = useState<number[]>([]);
+  const [faqs, setFaqs] = useState<FAQItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -39,8 +25,35 @@ export default function FAQ() {
     checkUser();
   }, [router]);
 
+  useEffect(() => {
+    const fetchFaqs = async () => {
+      setLoading(true);
+      setError(null);
+      const { data, error } = await supabase
+        .from('faqs')
+        .select('question, answer')
+        .order('id', { ascending: true }); // Order by id ascending
+      if (error) {
+        console.log(error);
+        setError('Failed to load FAQs.');
+        setFaqs([]);
+      } else {
+        setFaqs(
+          (data || []).map((row: any) => ({
+            question: row.question,
+            answer: row.answer,
+          }))
+        );
+      }
+      setLoading(false);
+    };
+    fetchFaqs();
+
+    console.log(faqs);
+  }, []);
+
   // Filter questions by search
-  const filteredQuestions = initialQuestions.filter(q =>
+  const filteredQuestions = faqs.filter(q =>
     q.question.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -49,6 +62,40 @@ export default function FAQ() {
       prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]
     );
   };
+
+  // Add helper to parse answer text and render links
+  function renderAnswerWithLinks(answer: string) {
+    // Regex to match [text + url]
+    const linkRegex = /\[(.*?)\s*\+\s*(.*?)\]/g;
+    const parts: (string | { text: string; url: string })[] = [];
+    let lastIndex = 0;
+    let match;
+    while ((match = linkRegex.exec(answer)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(answer.slice(lastIndex, match.index));
+      }
+      parts.push({ text: match[1].trim(), url: match[2].trim() });
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < answer.length) {
+      parts.push(answer.slice(lastIndex));
+    }
+    return parts.map((part, i) =>
+      typeof part === 'string'
+        ? part
+        : (
+            <a
+              key={i}
+              href={part.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 underline hover:text-purple-300 transition-colors"
+            >
+              {part.text}
+            </a>
+          )
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center py-30 px-2 bg-[#0a101f]">
@@ -66,7 +113,11 @@ export default function FAQ() {
         </div>
       </div>
       <div className="w-full max-w-2xl flex flex-col gap-6 px-4 md:px-0">
-        {filteredQuestions.length === 0 ? (
+        {loading ? (
+          <div className="text-center text-lg text-gray-300">Loading...</div>
+        ) : error ? (
+          <div className="text-center text-lg text-red-400">{error}</div>
+        ) : filteredQuestions.length === 0 ? (
           <div className="text-center text-lg text-gray-300">No questions found.</div>
         ) : (
           filteredQuestions.map((q, idx) => (
@@ -90,7 +141,7 @@ export default function FAQ() {
                 className={`px-8 text-md text-purple-100 transition-all duration-300 ease-linear overflow-hidden ${openIndexes.includes(idx) ? 'max-h-40 opacity-100 pb-6' : 'max-h-0 opacity-0 pb-0'}`}
                 style={{ pointerEvents: openIndexes.includes(idx) ? 'auto' : 'none' }}
               >
-                {q.answer}
+                {renderAnswerWithLinks(q.answer)}
               </div>
             </div>
           ))
