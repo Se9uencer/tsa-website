@@ -49,6 +49,12 @@ export default function Profile() {
       { filled: false },
       { filled: true },
       { filled: false },
+      { filled: true },
+      { filled: false },
+      { filled: true },
+      { filled: true },
+      { filled: false },
+      { filled: true },
     ],
     events: [
       {
@@ -64,46 +70,8 @@ export default function Profile() {
     ],
   };
 
-  // Badge carousel state and logic (must be after userData)
-  const [badgeStartIdx, setBadgeStartIdx] = useState(0);
-  const [badgesPerRow, setBadgesPerRow] = useState(3);
-  const [badgeRows, setBadgeRows] = useState(1);
+  // Badge container ref for potential future enhancements
   const badgeContainerRef = useRef<HTMLDivElement>(null);
-  const badgeSize = 80; // px, adjust if your badge size changes
-  const badgeGap = 16; // px, adjust if your gap changes
-  const badgeVerticalPadding = 32; // px, adjust for vertical padding in the container
-
-  // Responsive badge grid calculation
-  // useLayoutEffect(() => {
-  //   function calculateBadgesFit() {
-  //     console.log("start");
-  //     if (!badgeContainerRef.current) return;
-  //     console.log("made it?");
-  //     const container = badgeContainerRef.current;
-  //     const width = container.offsetWidth;
-  //     const height = container.offsetHeight;
-  //     // Calculate badges per row
-  //     // const perRow = Math.max(1, Math.floor((width + badgeGap) / (badgeSize + badgeGap)));
-  //     // Calculate rows
-  //     const perRow = 3;
-  //     const totalBadges = userData.badges.length;
-  //     const neededRows = Math.ceil(totalBadges / perRow);
-  //     const maxRowsFit = Math.floor((height + badgeGap - badgeVerticalPadding) / (badgeSize + badgeGap));
-  //     const rows = Math.max(1, Math.min(neededRows, maxRowsFit));
-
-  //     console.log(rows);
-  //     setBadgesPerRow(3);
-  //     setBadgeRows(rows);
-  //   }
-  //   calculateBadgesFit();
-  //   window.addEventListener('resize', calculateBadgesFit);
-  //   return () => window.removeEventListener('resize', calculateBadgesFit);
-  // }, []);
-
-  const badgesPerPage = badgesPerRow * badgeRows;
-  const canScrollLeft = badgeStartIdx > 0;
-  const canScrollRight = badgeStartIdx + badgesPerPage < userData.badges.length;
-  const visibleBadges = userData.badges.slice(badgeStartIdx, badgeStartIdx + badgesPerPage);
 
   if (loading) {
     return <div className="flex justify-center items-center min-h-screen text-white text-2xl">Loading...</div>;
@@ -150,49 +118,25 @@ export default function Profile() {
 
             {/* Badges */}
             <div
-              className="w-full max-w-full md:max-w-lg bg-[#181e29] rounded-3xl border border-[#232a3a] shadow-lg p-6 relative flex flex-col max-h-72 overflow-hidden min-h-0 mt-10"
+              className="w-full max-w-full md:max-w-lg bg-[#181e29] rounded-3xl border border-[#232a3a] shadow-lg p-6 relative flex flex-col mt-10"
               style={{ boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}
               ref={badgeContainerRef}
             >
               <div className="text-3xl font-bold text-white mb-4 ml-2">Badges</div>
-              <div className="flex-1 flex items-center justify-center gap-2">
-                {/* Left Arrow */}
-                <button
-                  className={`text-3xl px-2 py-1 rounded-full transition-colors ${canScrollLeft ? 'text-white hover:bg-[#232a3a]' : 'text-gray-600 cursor-not-allowed'}`}
-                  onClick={() => canScrollLeft && setBadgeStartIdx(Math.max(0, badgeStartIdx - badgesPerPage))}
-                  disabled={!canScrollLeft}
-                  aria-label="Scroll badges left"
-                >
-                  &#8249;
-                </button>
-                {/* Badges Grid */}
-                <div
-                  className={`grid gap-4 w-full h-full place-items-center`}
-                  style={{
-                    gridTemplateColumns: `repeat(${badgesPerRow}, minmax(0, 1fr))`,
-                    gridTemplateRows: `repeat(${badgeRows}, minmax(0, 1fr))`,
-                  }}
-                >
-                  {visibleBadges.map((badge, idx) => (
+              <div className="flex-1 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-[#232a3a] scrollbar-track-transparent relative">
+                <div className="flex gap-4 pb-2 min-w-max">
+                  {userData.badges.map((badge, idx) => (
                     <div
-                      key={badgeStartIdx + idx}
+                      key={idx}
                       className={badge.filled
-                        ? "w-18 h-18 rounded-full bg-[#e6d36a] border-4 border-black"
-                        : "w-18 h-18 rounded-full border-4 border-dashed border-black bg-transparent"
+                        ? "w-20 h-20 rounded-full bg-[#e6d36a] border-4 border-black flex-shrink-0"
+                        : "w-20 h-20 rounded-full border-4 border-dashed border-black bg-transparent flex-shrink-0"
                       }
-                      style={{ width: badgeSize, height: badgeSize }}
                     />
                   ))}
                 </div>
-                {/* Right Arrow */}
-                <button
-                  className={`text-3xl px-2 py-1 rounded-full transition-colors ${canScrollRight ? 'text-white hover:bg-[#232a3a]' : 'text-gray-600 cursor-not-allowed'}`}
-                  onClick={() => canScrollRight && setBadgeStartIdx(badgeStartIdx + badgesPerPage)}
-                  disabled={!canScrollRight}
-                  aria-label="Scroll badges right"
-                >
-                  &#8250;
-                </button>
+                {/* Fade indicator for scrollable content */}
+                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#181e29] to-transparent pointer-events-none" />
               </div>
             </div>
           </div>
