@@ -36,3 +36,36 @@ body {
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: #3a4151;
 }
+
+/* Smooth rollout for expanding/collapsing event embed */
+.rollout {
+  transition-property: max-height, opacity, transform;
+  transition-duration: 0.5s;
+  transition-timing-function: ease-in-out;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-0.5rem);
+}
+
+.rollout.max-h-64 {
+  max-height: 16rem; /* 256px */
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Custom transparent scrollbar for left box */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #6b5dd525 #0000; /* thumb, track */
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #64748b88;
+  border-radius: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
