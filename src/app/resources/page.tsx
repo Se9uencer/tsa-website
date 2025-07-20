@@ -141,7 +141,7 @@ export default function Resources() {
                               <a
                                 key={col}
                                 href={`https://drive.google.com/drive/folders/${val}`}
-                                className="bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent hover:from-blue-700 hover:to-violet-700 transition-colors duration-200 text-lg pl-8"
+                                className="bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent hover:from-blue-700 hover:to-violet-700 transition-colors duration-200 text-lg pl-8"
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >

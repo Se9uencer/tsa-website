@@ -17,48 +17,52 @@ const aboutContent = {
   missionStatement: 'Giving everyone the opportunity to learn to live in a creative and technical world.'
 };
 
-const timelineEvents = [
-  {
-    date: 'Jun 23',
-    title: 'Event',
-    description: 'Something. A little description about the event itself.'
-  },
-  {
-    date: 'Aug 10',
-    title: 'Something Else',
-    description: 'A description goes here maybe, or honestly for most things just a title would suffice'
-  },
-  {
-    date: 'Sep 10',
-    title: 'More Else',
-    description: 'A description goes here maybe, or honestly for most things just a title would suffice'
-  },
-  {
-    date: 'Sep 10',
-    title: 'More more',
-    description: 'A description goes here maybe, or honestly for most things just a title would suffice'
-  }
-];
+const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
 
 export default function About() {
   const router = useRouter();
+  const [timelineEvents, setTimelineEvents] = useState<{ date: string; title: string; description: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [timelineWindow, setTimelineWindow] = useState(3); // default to 3 for desktop
-  const [timelineStart, setTimelineStart] = useState(() => {
-    // Start at the last window by default
-    return Math.max(0, timelineEvents.length - 3);
-  });
+  const [timelineStart, setTimelineStart] = useState(0);
+
+  // Fetch timeline events from Supabase
+  useEffect(() => {
+    const fetchTimeline = async () => {
+      setLoading(true);
+      setError(null);
+      const { data, error } = await supabase
+        .from('aboutTimeline')
+        .select('date, title, description')
+        .order('date', { ascending: true });
+      if (error) {
+        setError('Failed to load timeline events.');
+        setTimelineEvents([]);
+      } else {
+        setTimelineEvents(data || []);
+        // Start at the last window by default
+        setTimelineStart(Math.max(0, (data?.length || 0) - timelineWindow));
+      }
+      setLoading(false);
+    };
+    fetchTimeline();
+  }, [timelineWindow]);
 
   // Responsive: update timelineWindow and timelineStart on resize
   useEffect(() => {
     function updateWindow() {
       let win = window.innerWidth < 768 ? 1 : 3;
       setTimelineWindow(win);
-      setTimelineStart(Math.max(0, timelineEvents.length - win));
+      setTimelineStart(prevStart => {
+        // Adjust start to always show the last window
+        return Math.max(0, timelineEvents.length - win);
+      });
     }
     updateWindow();
     window.addEventListener('resize', updateWindow);
     return () => window.removeEventListener('resize', updateWindow);
-  }, []);
+  }, [timelineEvents.length]);
 
   const maxStart = Math.max(0, timelineEvents.length - timelineWindow);
   const visibleEvents = timelineEvents.slice(timelineStart, timelineStart + timelineWindow);
@@ -112,40 +116,55 @@ export default function About() {
       {/* Timeline Bar and Cards (combined) */}
       <div className="w-full max-w-5xl mx-auto flex flex-col items-center">
         <div className="relative w-full flex items-center justify-center mb-6" style={{ minHeight: 120 }}>
-          {/* Timeline line (behind cards) */}
-          <div className="absolute left-0 right-0 top-1/2 h-1 bg-black z-0" style={{ transform: 'translateY(-50%)' }} />
           {/* Left Arrow */}
           <button
             className="z-10 bg-black rounded-full w-8 h-8 flex items-center justify-center text-white text-xl shadow hover:bg-gray-800 transition disabled:opacity-40 mr-2"
             onClick={() => setTimelineStart(s => Math.max(0, s - 1))}
-            disabled={timelineStart === 0}
+            disabled={timelineStart === 0 || loading || timelineEvents.length === 0}
             aria-label="Previous events"
           >
             &#x25C0;
           </button>
-          {/* Timeline Cards */}
-          <div className="flex flex-row gap-6 w-auto justify-center z-10">
-            {visibleEvents.map((event, idx) => (
-              <div
-                key={timelineStart + idx}
-                className="rounded-2xl border border-[#232a3a] bg-[#181e29] shadow-lg w-full max-w-xs flex flex-col overflow-hidden"
-                style={{ boxShadow, minWidth: '220px', width: '100%' }}
-              >
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-1 pr-2">
-                    <div className="font-semibold text-white text-lg">{event.title}</div>
-                    <span className="bg-blue-400 text-white px-3 py-1 rounded-md text-xs font-semibold shadow ml-2 whitespace-nowrap">{event.date}</span>
+          {/* Timeline Cards and Dynamic Line */}
+          <div className="relative flex flex-row items-center gap-6 w-auto justify-center z-10">
+            {/* Dynamic timeline line behind cards */}
+            <div className="absolute left-0 right-0 top-1/2 h-1 bg-black z-0" style={{ transform: 'translateY(-50%)', width: '100%' }} />
+            {/* Timeline Cards */}
+            {loading ? (
+              <div className="text-white text-lg">Loading timeline...</div>
+            ) : error ? (
+              <div className="text-red-400 text-lg">{error}</div>
+            ) : visibleEvents.length === 0 ? (
+              <div className="text-gray-400 text-lg">No timeline events found.</div>
+            ) : (
+              visibleEvents.map((event, idx) => (
+                <div
+                  key={timelineStart + idx}
+                  className="rounded-2xl border border-[#232a3a] bg-[#181e29] shadow-lg w-full max-w-xs flex flex-col overflow-hidden relative z-10"
+                  style={{ boxShadow, minWidth: '220px', width: '100%' }}
+                >
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-1 pr-2">
+                      <div className="font-semibold text-white text-lg">{event.title}</div>
+                      <span className="bg-blue-400 text-white px-3 py-1 rounded-md text-xs font-semibold shadow ml-2 whitespace-nowrap">
+                        {/* Format date as 'Mon YYYY' */}
+                        {(() => {
+                          const splitDate = event.date.split("-");
+                          return months[Number(splitDate[1])] + " " + splitDate[0]
+                        })()}
+                      </span>
+                    </div>
+                    <div className="text-gray-200 text-sm">{event.description}</div>
                   </div>
-                  <div className="text-gray-200 text-sm">{event.description}</div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
           {/* Right Arrow */}
           <button
             className="z-10 bg-black rounded-full w-8 h-8 flex items-center justify-center text-white text-xl shadow hover:bg-gray-800 transition disabled:opacity-40 ml-2"
             onClick={() => setTimelineStart(s => Math.min(maxStart, s + 1))}
-            disabled={timelineStart >= maxStart}
+            disabled={timelineStart >= maxStart || loading || timelineEvents.length === 0}
             aria-label="Next events"
           >
             &#x25B6;
