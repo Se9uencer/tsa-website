@@ -9,6 +9,7 @@ export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showEventsModal, setShowEventsModal] = useState(false);
+  const [userEvents, setUserEvents] = useState<any[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -16,21 +17,24 @@ export default function Profile() {
       const { data, error } = await supabase.auth.getUser();
       if (error || !data.user) {
         router.replace('/signin');
-      }
-    };
-    checkUser();
-  }, [router]);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (!error && data.user) {
+      } else {
         setUser(data.user);
+        // Fetch user events from profiles table
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('events')
+          .eq('id', data.user.id)
+          .single();
+        if (!profileError && profile && Array.isArray(profile.events)) {
+          setUserEvents(profile.events);
+        } else {
+          setUserEvents([]);
+        }
       }
       setLoading(false);
     };
-    fetchUser();
-  }, []);
+    checkUser();
+  }, [router]);
 
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Member';
   const userRank = user?.user_metadata?.rank || 'Member';
@@ -147,17 +151,17 @@ export default function Profile() {
               style={{ boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}>
               <div className="text-3xl font-bold text-white mb-6">Your Events</div>
               <div className="flex flex-col gap-7">
-                {userData.events.slice(0, 4).map((event, idx) => (
-                  <div key={idx}>
-                    <div className="text-2xl font-bold text-purple-300">{event.name}</div>
-                    <div className="flex gap-4 mt-1">
-                      <a href={event.rubricUrl} className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Rubric <span className="text-blue-400">↗</span></a>
-                      <a href={event.resourcesUrl} className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Resources <span className="text-blue-400">↗</span></a>
+                {userEvents.length === 0 ? (
+                  <div className="text-gray-400 italic">You aren't registered in any events.</div>
+                ) : (
+                  userEvents.slice(0, 4).map((event, idx) => (
+                    <div key={event.id || idx}>
+                      <div className="text-2xl font-bold text-purple-300">{event.name}</div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
-              {userData.events.length >= 4 && (
+              {userEvents.length >= 4 && (
                 <div className="mt-8 text-right">
                   <button
                     className="text-xl italic text-purple-300 hover:underline hover:cursor-pointer focus:outline-none"
@@ -185,15 +189,15 @@ export default function Profile() {
             </button>
             <div className="text-3xl font-bold text-white mb-6">All Your Events</div>
             <div className="flex flex-col gap-7">
-              {userData.events.map((event, idx) => (
-                <div key={idx} className="bg-[#232a3a] rounded-xl p-4">
-                  <div className="text-2xl font-bold text-white">{event.name}</div>
-                  <div className="flex gap-4 mt-1">
-                    <a href={event.rubricUrl} className="text-gray-300 hover:underline flex items-center gap-1 text-lg">Rubric <span className="text-blue-400">↗</span></a>
-                    <a href={event.resourcesUrl} className="text-gray-300 hover:underline flex items-center gap-1 text-lg">Resources <span className="text-blue-400">↗</span></a>
+              {userEvents.length === 0 ? (
+                <div className="text-gray-400 italic">You aren't registered in any events.</div>
+              ) : (
+                userEvents.map((event, idx) => (
+                  <div key={event.id || idx} className="bg-[#232a3a] rounded-xl p-4">
+                    <div className="text-2xl font-bold text-white">{event.name}</div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>

@@ -34,6 +34,84 @@ function getDaysInMonth(year: number, month: number) {
   return Array.from({ length: new Date(year, month + 1, 0).getDate() }, (_, i) => i + 1);
 }
 
+function RegisterEventsPopup({ open, onClose, availableEvents, onRegister, loading }: {
+  open: boolean,
+  onClose: () => void,
+  availableEvents: any[],
+  onRegister: (selected: any[]) => void,
+  loading: boolean
+}) {
+  const [selectedEvents, setSelectedEvents] = useState<any[]>([]);
+  const [addEvent, setAddEvent] = useState('');
+
+  const handleAdd = () => {
+    if (addEvent && !selectedEvents.includes(addEvent)) {
+      setSelectedEvents([...selectedEvents, addEvent]);
+      setAddEvent('');
+    }
+  };
+  const handleRemove = (event: string) => {
+    setSelectedEvents(selectedEvents.filter(e => e !== event));
+  };
+  const handleRegister = () => {
+    if (selectedEvents.length > 0) {
+      onRegister(selectedEvents);
+    }
+  };
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-fade-in">
+      <div className="bg-[#181e29] rounded-2xl shadow-2xl border border-[#232a3a] p-8 w-full max-w-md relative">
+        <button
+          className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold focus:outline-none"
+          onClick={onClose}
+          aria-label="Close"
+        >
+          &times;
+        </button>
+        <div className="flex flex-col items-center gap-4">
+          <div className="text-2xl font-bold text-white mb-2">Register for Events</div>
+          <div className="text-gray-300 mb-2 text-center">You haven't registered for any events yet. Please select at least one event to participate in!</div>
+          <div className="w-full mb-2">
+            <div className="flex flex-col sm:flex-row gap-2 mb-2 w-full">
+              <select
+                className="w-full sm:flex-1 px-3 py-2 rounded-lg border border-[#232a3a] bg-[#232a3a] text-white"
+                value={addEvent}
+                onChange={e => setAddEvent(e.target.value)}
+              >
+                <option value="">Select an event...</option>
+                {availableEvents.filter(e => !selectedEvents.includes(e.name)).map(event => (
+                  <option key={event.id} value={event.name}>{event.name}</option>
+                ))}
+              </select>
+              <button
+                className="w-full sm:w-auto px-3 py-2 rounded-lg bg-blue-500 text-white font-semibold hover:bg-blue-600 transition"
+                onClick={handleAdd}
+                disabled={!addEvent}
+              >Add</button>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {selectedEvents.map(event => (
+                <span key={event} className="bg-blue-700 text-white px-3 py-1 rounded-lg flex items-center gap-2">
+                  {event}
+                  <button className="ml-1 text-xs text-red-300 hover:text-red-500" onClick={() => handleRemove(event)}>&times;</button>
+                </span>
+              ))}
+            </div>
+          </div>
+          <button
+            className="mt-4 w-full py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition disabled:opacity-50"
+            onClick={handleRegister}
+            disabled={selectedEvents.length === 0 || loading}
+          >
+            {loading ? 'Registering...' : 'Register'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -45,18 +123,51 @@ export default function Dashboard() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showRegisterPopup, setShowRegisterPopup] = useState(false);
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [userEvents, setUserEvents] = useState<any[]>([]);
+  const [availableEvents, setAvailableEvents] = useState<any[]>([]);
+
+  // Fetch available events from master_competitive_events
+  useEffect(() => {
+    const fetchEvents = async () => {
+      const { data, error } = await supabase
+        .from('master_competitive_events')
+        .select('id, name');
+      if (!error && data) {
+        setAvailableEvents(data);
+      }
+    };
+    fetchEvents();
+  }, []);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserAndEvents = async () => {
       const { data, error } = await supabase.auth.getUser();
       if (error || !data.user) {
         router.replace('/signin');
+        setLoading(false);
+        return;
+      }
+      setUser(data.user);
+      // Fetch user events from profiles table
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('events')
+        .eq('id', data.user.id)
+        .single();
+      if (!profileError && profile) {
+        setUserEvents(Array.isArray(profile.events) ? profile.events : []);
+        if (!profile.events || profile.events.length === 0) {
+          setShowRegisterPopup(true);
+        }
       } else {
-        setUser(data.user);
+        setUserEvents([]);
+        setShowRegisterPopup(true);
       }
       setLoading(false);
     };
-    fetchUser();
+    fetchUserAndEvents();
   }, [router]);
 
   const handleSignOut = async () => {
@@ -67,6 +178,22 @@ export default function Dashboard() {
   const handleViewEventDetails = (event: any) => {
     // Navigate to calendar page with event details
     router.push(`/calendar?event=${event.id}`);
+  };
+
+  const handleRegisterEvents = async (selected: any[]) => {
+    setRegisterLoading(true);
+    if (!user) return;
+    // Store selected event objects (id and name) in the user's events array
+    const selectedEventObjs = availableEvents.filter(e => selected.includes(e.name));
+    const { error } = await supabase
+      .from('profiles')
+      .update({ events: selectedEventObjs })
+      .eq('id', user.id);
+    if (!error) {
+      setUserEvents(selectedEventObjs);
+      setShowRegisterPopup(false);
+    }
+    setRegisterLoading(false);
   };
 
   if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
@@ -84,6 +211,13 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#0a101f] text-white flex flex-col">
+      <RegisterEventsPopup
+        open={showRegisterPopup}
+        onClose={() => setShowRegisterPopup(false)}
+        availableEvents={availableEvents}
+        onRegister={handleRegisterEvents}
+        loading={registerLoading}
+      />
 
       {/* Spacer for nav */}
       <div className="h-24" />

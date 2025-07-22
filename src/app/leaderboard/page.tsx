@@ -9,51 +9,90 @@ const tierColors: Record<string, string> = {
   Bronze: "bg-yellow-900/30 border-yellow-700 text-yellow-400",
 };
 
+function UserPopup({ user, onClose }: { user: any, onClose: () => void }) {
+  if (!user) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-fade-in">
+      <div className="bg-[#181e29] rounded-2xl shadow-2xl border border-[#232a3a] p-8 w-full max-w-md relative">
+        <button
+          className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold focus:outline-none"
+          onClick={onClose}
+          aria-label="Close"
+        >
+          &times;
+        </button>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-20 h-20 rounded-full bg-blue-900 text-blue-300 font-bold text-3xl flex items-center justify-center border border-blue-700">
+            {user.full_name ? user.full_name[0] : '?'}
+          </div>
+          <div className="text-2xl font-bold text-white">{user.full_name || 'Unknown'}</div>
+          <div className="text-lg text-gray-300">{user.points ?? 0} points</div>
+          <div className="text-lg font-semibold">
+            <span className={`px-3 py-1 rounded-lg border font-semibold text-base ${tierColors[user.tier]}`}>{user.tier}</span>
+          </div>
+          <div className="w-full mt-4">
+            <div className="text-lg font-bold text-blue-200 mb-2">Events Competing In</div>
+            {Array.isArray(user.events) && user.events.length > 0 ? (
+              <ul className="list-disc list-inside text-white">
+                {user.events.map((event: any, idx: number) => (
+                  <li key={idx}>{typeof event === 'string' ? event : event.name || JSON.stringify(event)}</li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-gray-400 italic">No events listed.</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [friends, setFriends] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const router = useRouter();
-  // For demo, assume current user id is available (replace with real auth logic)
-  const currentUserId = "user-id-demo";
 
   useEffect(() => {
-    const checkUser = async () => {
+    const fetchUser = async () => {
       const { data, error } = await supabase.auth.getUser();
       if (error || !data.user) {
         router.replace('/signin');
+      } else {
+        setCurrentUserId(data.user.id);
       }
     };
-    checkUser();
+    fetchUser();
   }, [router]);
 
   useEffect(() => {
+    if (!currentUserId) return;
     const fetchData = async () => {
       setLoading(true);
       setError(null);
-      // Fetch all profiles ordered by points desc
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, points")
+        .select("id, full_name, points, events")
         .order("points", { ascending: false });
       if (error) {
         setError("Failed to load leaderboard.");
         setLoading(false);
         return;
       }
-      // Assign rank and tier
       const leaderboardData = (data || []).map((user: any, idx: number) => ({
         ...user,
         rank: idx + 1,
         tier: idx === 0 ? "Gold" : idx === 1 ? "Silver" : "Bronze",
       }));
       setLeaderboard(leaderboardData);
-      // For demo, "friends" are users whose id is not the current user and whose rank is odd (mock logic)
+      // Friends logic only if currentUserId is available
       const friendsData = leaderboardData.filter(
         (u: any) => u.id !== currentUserId && u.rank % 2 === 1
       ).slice(0, 5);
-      // Add current user to friends list if not present
       const currentUser = leaderboardData.find((u: any) => u.id === currentUserId);
       if (currentUser && !friendsData.some((f: any) => f.id === currentUserId)) {
         friendsData.push(currentUser);
@@ -62,7 +101,7 @@ export default function Leaderboard() {
       setLoading(false);
     };
     fetchData();
-  }, []);
+  }, [currentUserId]);
 
   // Find current user info
   const currentUser = leaderboard.find((u) => u.id === currentUserId);
@@ -70,6 +109,7 @@ export default function Leaderboard() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto mt-24 px-4">
+      {selectedUser && <UserPopup user={selectedUser} onClose={() => setSelectedUser(null)} />}
       {/* Main Leaderboard */}
       <div className="flex-1 p-8 bg-[#181e29] rounded-2xl shadow-lg border border-[#232a3a] min-w-0">
         <h1 className="text-5xl font-extrabold text-blue-200 mb-2 text-center">Leaderboard</h1>
@@ -82,7 +122,7 @@ export default function Leaderboard() {
             <p className="text-center text-lg text-white mb-6">
               {currentUser ? (
                 <>
-                  You are in <span className="font-bold text-blue-400">{currentUser.rank}th place</span> with <span className="font-bold text-blue-400">{currentUser.points}</span> points.
+                  You are in <span className="font-bold text-blue-400">{currentUser.rank}th place</span> with <span className="font-bold text-blue-400">{currentUser.points ?? 0}</span> points.
                 </>
               ) : (
                 <>Sign in to see your rank!</>
@@ -93,7 +133,7 @@ export default function Leaderboard() {
               <button className="px-4 py-2 rounded-lg font-semibold border border-slate-300 bg-slate-200/20 text-slate-200">Silver</button>
               <button className="px-4 py-2 rounded-lg font-semibold border border-yellow-700 bg-yellow-900/30 text-yellow-400">Bronze</button>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
               <table className="min-w-full text-white text-lg">
                 <thead>
                   <tr className="border-b border-[#232a3a]">
@@ -107,8 +147,10 @@ export default function Leaderboard() {
                   {top20.map((row) => (
                     <tr key={row.id} className="border-b border-[#232a3a]">
                       <td className="py-2 px-4">{row.rank}</td>
-                      <td className="py-2 px-4">{row.full_name}</td>
-                      <td className="py-2 px-4">{row.points}</td>
+                      <td className="py-2 px-4">
+                        <button className="text-blue-400 hover:underline" onClick={() => setSelectedUser(row)}>{row.full_name || 'Unknown'}</button>
+                      </td>
+                      <td className="py-2 px-4">{row.points ?? 0}</td>
                       <td className="py-2 px-4">
                         <span className={`px-3 py-1 rounded-lg border font-semibold text-base ${tierColors[row.tier]}`}>{row.tier}</span>
                       </td>
@@ -146,8 +188,8 @@ export default function Leaderboard() {
                       {friend.full_name ? friend.full_name[0] : '?'}
                     </div>
                     <div className="flex-1">
-                      <div className={`font-semibold ${friend.id === currentUserId ? 'text-blue-400' : 'text-white'}`}>{friend.full_name}</div>
-                      <div className="text-sm text-gray-400">{friend.points} pts</div>
+                      <div className={`font-semibold ${friend.id === currentUserId ? 'text-blue-400' : 'text-white'}`}>{friend.full_name || 'Unknown'}</div>
+                      <div className="text-sm text-gray-400">{friend.points ?? 0} pts</div>
                     </div>
                     {idx === 0 && <span className="ml-2 px-2 py-1 rounded bg-yellow-500/20 text-yellow-300 text-xs font-bold border border-yellow-400">Top Friend</span>}
                     {friend.id === currentUserId && <span className="ml-2 px-2 py-1 rounded bg-blue-500/20 text-blue-300 text-xs font-bold border border-blue-400">You</span>}

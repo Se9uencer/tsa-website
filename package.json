@@ -11,7 +11,7 @@
   "dependencies": {
     "@fontsource/raleway": "^5.2.6",
     "@heroicons/react": "^2.2.0",
-    "@supabase/supabase-js": "^2.50.0",
+    "@supabase/supabase-js": "^2.52.0",
     "next": "^15.3.4",
     "react": "^19.1.0",
     "react-device-detect": "^2.2.3",
