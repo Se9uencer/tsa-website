@@ -47,7 +47,7 @@ export default function Resources() {
     const fetchResourceLinks = async () => {
       const eventNames = EVENTS.map(e => e.name);
       const { data, error } = await supabase
-        .from('resourcesDriveFolderIDs')
+        .from('resourcesDriveIDs')
         .select('*')
         .in('Name', eventNames);
       if (!error && data) {
