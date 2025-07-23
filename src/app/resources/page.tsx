@@ -30,16 +30,29 @@ export default function Resources() {
   const [showing, setShowing] = useState<{ [key: string]: boolean }>({});
   const [resourceLinks, setResourceLinks] = useState<{ [eventName: string]: { [col: string]: string } }>({});
   const [generalLinks, setGeneralLinks] = useState<{ name: string; link: string }[]>([]);
+  const [userEvents, setUserEvents] = useState<any[]>([]);
   const timeoutRef = useRef<{ [key: string]: NodeJS.Timeout }>({});
 
   useEffect(() => {
-    const checkUser = async () => {
+    const checkUserAndFetchEvents = async () => {
       const { data, error } = await supabase.auth.getUser();
       if (error || !data.user) {
         router.replace('/signin');
+      } else {
+        // Fetch user events from profiles table
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('events')
+          .eq('id', data.user.id)
+          .single();
+        if (!profileError && profile && Array.isArray(profile.events)) {
+          setUserEvents(profile.events);
+        } else {
+          setUserEvents([]);
+        }
       }
     };
-    checkUser();
+    checkUserAndFetchEvents();
   }, [router]);
 
   // Fetch resource links for all events on mount
@@ -87,7 +100,7 @@ export default function Resources() {
 
   // Handle showing state for smooth unmount
   useEffect(() => {
-    EVENTS.forEach(event => {
+    (userEvents || []).forEach(event => {
       if (expanded === event.id) {
         // If expanding, show immediately
         setShowing(prev => ({ ...prev, [event.id]: true }));
@@ -105,7 +118,7 @@ export default function Resources() {
     return () => {
       Object.values(timeoutRef.current).forEach(clearTimeout);
     };
-  }, [expanded]);
+  }, [expanded, userEvents]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a101f] px-4 pt-16 pb-8 md:pt-8">
@@ -116,10 +129,10 @@ export default function Resources() {
           <h2 className="text-white text-2xl font-bold mb-6 shrink-0">Your Events</h2>
           <div className="flex flex-col flex-1 min-h-0">
             <div className="flex flex-col gap-4 flex-1 pr-2 overflow-y-auto custom-scrollbar min-h-0">
-              {EVENTS.length === 0 ? (
+              {userEvents.length === 0 ? (
                 <span className="text-gray-400 italic">You aren't registered in any events.</span>
               ) : (
-                EVENTS.map(event => (
+                userEvents.map(event => (
                   <div key={event.id}>
                     <button
                       className="text-xl font-bold text-purple-400 hover:text-purple-500 hover:cursor-pointer flex w-full text-left focus:outline-none"
