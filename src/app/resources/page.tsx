@@ -5,16 +5,14 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
 
-type Event = { name: string; id: string };
-const EVENTS: Event[] = [  // Temporary data 
-  { name: 'Architectural Design', id: '1' },
-  { name: 'Data Science and Analytics', id: '2' },
-  { name: 'Manufacturing Prototype', id: '3' },
-  { name: 'Computer-Aided Design (CAD), Architecture', id: '4' },
+// type Event = { name: string; id: string };
+// const EVENTS: Event[] = [  // Temporary data 
+//   { name: 'Architectural Design', id: '1' },
+//   { name: 'Data Science and Analytics', id: '2' },
+//   { name: 'Manufacturing Prototype', id: '3' },
+//   { name: 'Computer-Aided Design (CAD), Architecture', id: '4' },
 
-];
-
-const GENERAL_EMBED_URL = 'https://drive.google.com/embeddedfolderview?id=1DigW0nBS9Ptsunb6rnGk-YTI0ggZEzrL#list';
+// ];
 
 function camelToTitleCase(camel: string): string {
   return camel
@@ -58,7 +56,7 @@ export default function Resources() {
   // Fetch resource links for all events on mount
   useEffect(() => {
     const fetchResourceLinks = async () => {
-      const eventNames = EVENTS.map(e => e.name);
+      const eventNames = userEvents.map(e => e.name);
       const { data, error } = await supabase
         .from('resourcesDriveIDs')
         .select('*')
@@ -79,7 +77,7 @@ export default function Resources() {
       }
     };
     fetchResourceLinks();
-  }, []);
+  }, [userEvents]);
 
   // Fetch general resource links on mount
   useEffect(() => {
@@ -153,7 +151,7 @@ export default function Resources() {
                             Object.entries(resourceLinks[event.name]).map(([col, val]) => (
                               <a
                                 key={col}
-                                href={`https://drive.google.com/drive/folders/${val}`}
+                                href={`https://drive.google.com/${val}`}
                                 className="bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent hover:from-blue-700 hover:to-violet-700 transition-colors duration-200 text-lg pl-8"
                                 target="_blank"
                                 rel="noopener noreferrer"

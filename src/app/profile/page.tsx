@@ -10,6 +10,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [showEventsModal, setShowEventsModal] = useState(false);
   const [userEvents, setUserEvents] = useState<any[]>([]);
+  const [eventResourceLinks, setEventResourceLinks] = useState<{ [eventName: string]: { rubricUrl: string, resourcesUrl: string } }>({});
   const router = useRouter();
 
   useEffect(() => {
@@ -36,11 +37,34 @@ export default function Profile() {
     checkUser();
   }, [router]);
 
+  useEffect(() => {
+    // Fetch resource links for the user's events
+    const fetchEventResources = async () => {
+      if (!userEvents || userEvents.length === 0) return;
+      const eventNames = userEvents.map(e => e.name);
+      const { data, error } = await supabase
+        .from('resourcesDriveIDs')
+        .select('Name, "Full Folder", Rubric')
+        .in('Name', eventNames);
+      if (!error && data) {
+        const resourceMap: { [eventName: string]: { rubricUrl: string, resourcesUrl: string } } = {};
+        data.forEach((row: any) => {
+          resourceMap[row.Name] = {
+            rubricUrl: row.Rubric ? `https://drive.google.com/${row.Rubric}` : '#',
+            resourcesUrl: row["Full Folder"] ? `https://drive.google.com/${row["Full Folder"]}` : '#',
+          };
+        });
+        setEventResourceLinks(resourceMap);
+      }
+    };
+    fetchEventResources();
+  }, [userEvents]);
+
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Member';
   const userRank = user?.user_metadata?.rank || 'Member';
 
   // Temporary user data (to be replaced with Supabase in the future)
-  const [userData, setUserData] = useState({
+  const userData = {
     xp: 1200,
     xpToNextTier: 300,
     currentTier: 'Tier A',
@@ -72,53 +96,17 @@ export default function Profile() {
         resourcesUrl: '#',
       },
     ],
-  });
-
-  useEffect(() => {
-    // Fetch resource links for the user's events
-    const fetchEventResources = async () => {
-      const eventNames = userData.events.map(e => e.name);
-      const { data, error } = await supabase
-        .from('resourcesDriveIDs')
-        .select('Name, "Full Folder", Rubric')
-        .in('Name', eventNames);
-      if (!error && data) {
-        // Map event name to resource info
-        const resourceMap = Object.fromEntries(
-          data.map((row: any) => [
-            row.Name,
-            {
-              rubricUrl: row.Rubric ? `https://drive.google.com/drive/folders/${row.Rubric}` : '#',
-              resourcesUrl: row["Full Folder"] ? `https://drive.google.com/drive/folders/${row["Full Folder"]}` : '#',
-            },
-          ])
-        );
-        setUserData(prev => ({
-          ...prev,
-          events: prev.events.map(event => ({
-            ...event,
-            rubricUrl: resourceMap[event.name]?.rubricUrl || '#',
-            resourcesUrl: resourceMap[event.name]?.resourcesUrl || '#',
-          })),
-        }));
-      }
-    };
-    fetchEventResources();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  };
 
   // XP progress bar animation
   const [xpBarWidth, setXpBarWidth] = useState(0);
   useEffect(() => {
-    const animateXPBar = () => {
-      // Animate to the actual percent after mount
-      const timeout = setTimeout(() => {
-        setXpBarWidth(userData.xpPercent);
-      }, 700); // slight delay for effect
-      return () => clearTimeout(timeout);
-    }
-    animateXPBar();
-  }, []);
+    // Animate to the actual percent after mount
+    const timeout = setTimeout(() => {
+      setXpBarWidth(userData.xpPercent);
+    }, 700); // slight delay for effect
+    return () => clearTimeout(timeout);
+  }, [userData.xpPercent]);
 
   // Badge container ref for potential future enhancements
   const badgeContainerRef = useRef<HTMLDivElement>(null);
@@ -203,18 +191,17 @@ export default function Profile() {
                 {userEvents.length === 0 ? (
                   <div className="text-gray-400 italic">You aren't registered in any events.</div>
                 ) : (
-                userData.events.slice(0, 4).map((event, idx) => (
-                  <div key={event.id || idx}>
-                    <div className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent">{event.name}</div>
-                    <div className="flex gap-4 mt-1">
-                      <a href={event.rubricUrl} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Rubric <span className="text-blue-400">↗</span></a>
-                      <a href={event.resourcesUrl} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Resources <span className="text-blue-400">↗</span></a>
+                  userEvents.slice(0, 4).map((event, idx) => (
+                    <div key={event.id || idx}>
+                      <div className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent">{event.name}</div>
+                      <div className="flex gap-4 mt-1">
+                        <a href={eventResourceLinks[event.name]?.rubricUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Rubric <span className="text-blue-400">↗</span></a>
+                        <a href={eventResourceLinks[event.name]?.resourcesUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Resources <span className="text-blue-400">↗</span></a>
+                      </div>
                     </div>
-                  </div>
-                  )
-                )
+                  ))
                 )}
-              
+              </div>
               {userEvents.length >= 4 && (
                 <div className="mt-8 text-right">
                   <button
@@ -248,7 +235,11 @@ export default function Profile() {
               ) : (
                 userEvents.map((event, idx) => (
                   <div key={event.id || idx} className="bg-[#232a3a] rounded-xl p-4">
-                    <div className="text-2xl font-bold text-white">{event.name}</div>
+                    <div className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent">{event.name}</div>
+                    <div className="flex gap-4 mt-1">
+                      <a href={eventResourceLinks[event.name]?.rubricUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Rubric <span className="text-blue-400">↗</span></a>
+                      <a href={eventResourceLinks[event.name]?.resourcesUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Resources <span className="text-blue-400">↗</span></a>
+                    </div>
                   </div>
                 ))
               )}
