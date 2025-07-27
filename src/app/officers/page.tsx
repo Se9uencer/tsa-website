@@ -55,7 +55,8 @@ export default function Officers() {
       setError(null);
       const { data, error } = await supabase
         .from('officers')
-        .select('name, position, favoriteEvent, bio');
+        .select('name, position, favoriteEvent, bio')
+        .order('id', { ascending: true });
       if (error) {
         setError('Failed to load officers.');
         setLoading(false);
@@ -104,8 +105,8 @@ export default function Officers() {
             </div>
             <div className="flex-1 flex flex-col justify-center">
               <div className="text-2xl font-bold text-white leading-tight">{officer.name}</div>
-              <div className={"text-lg font-semibold mt-1 text-purple-400"}>{officer.position}</div>
-              <div className="mt-4 text-lg font-medium text-white">Favorite Event: <span className="text-sky-400">{officer.favoriteEvent}</span></div>
+              <div className={"text-lg font-semibold mt-1 bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent"}>{officer.position}</div>
+              <div className="mt-4 text-lg font-medium text-white">Favorite Event: <span className="bg-gradient-to-r from-sky-500 to-blue-500 bg-clip-text w-fit text-transparent">{officer.favoriteEvent}</span></div>
               <div className="text-base text-white font-sm line-clamp-4 overflow-hidden">
                 {getBioWithReadMore(officer.bio, () => setModalIndex(i))}
               </div>
@@ -132,7 +133,7 @@ export default function Officers() {
             <div className="flex flex-col items-center">
               <Image src={officers[modalIndex].image} alt="Profile" width={100} height={100} className="w-24 h-24 object-contain mb-4 border border-[#232a3a]/50" />
               <div className="text-2xl font-bold text-white mb-1">{officers[modalIndex].name}</div>
-              <div className={"text-lg font-semibold mb-2 text-purple-400"}>{officers[modalIndex].position}</div>
+              <div className={"text-lg font-semibold mb-2 bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent mb-4"}>{officers[modalIndex].position}</div>
               <div className="text-base text-white text-center whitespace-pre-line">{officers[modalIndex].bio}</div>
             </div>
           </div>

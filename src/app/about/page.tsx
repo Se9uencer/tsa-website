@@ -93,21 +93,21 @@ export default function About() {
         </div>
         {/* Chapter Description */}
         <div className="rounded-2xl border border-[#232a3a] bg-[#181e29] p-6 min-h-[180px] flex flex-col justify-center md:col-span-8" style={{ boxShadow }}>
-          <h2 className="text-xl md:text-2xl font-bold mb-2">{aboutContent.chapterTitle}</h2>
+          <h2 className="text-xl md:text-2xl font-bold mb-2 text-sky-300">{aboutContent.chapterTitle}</h2>
           <p className="text-base text-gray-200">
             {aboutContent.chapterDescription}
           </p>
         </div>
         {/* Members Box */}
         <div className="rounded-2xl border border-[#232a3a] bg-[#181e29] flex flex-col items-center justify-center min-h-[180px] p-6 md:col-span-4" style={{ boxShadow }}>
-          <span className="text-5xl font-extrabold text-[#875ae8] mb-2">{aboutContent.membersCount}</span>
+          <span className="text-5xl font-extrabold bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent mb-2">{aboutContent.membersCount}</span>
           <span className="text-2xl font-bold text-center" style={{ whiteSpace: 'pre-line' }}>{aboutContent.membersLabel}</span>
         </div>
       </div>
       {/* Mission Statement */}
       <div className="rounded-2xl border border-[#232a3a] bg-[#181e29] w-full max-w-4xl p-8" style={{ boxShadow }}>
-        <span className="text-xl md:text-2xl font-bold text-[#875ae8]">{aboutContent.missionPrefix}</span>
-        <span className="text-xl md:text-2xl font-bold text-blue-300">{aboutContent.missionStatement}</span>
+        <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent">{aboutContent.missionPrefix}</span>
+        <span className="text-xl md:text-2xl font-bold text-sky-300">{aboutContent.missionStatement}</span>
       </div>
 
       {/* Timeline Heading */}

@@ -17,7 +17,7 @@ export default function Contact() {
   }, [router]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a101f] py-8 pt-24 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a101f] py-16 pt-24 px-4">
       <h1 className="text-4xl font-bold text-white mt-8 mb-8">Contact Us
       </h1>
       <iframe 

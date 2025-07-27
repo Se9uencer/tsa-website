@@ -105,7 +105,7 @@ export default function FAQ() {
           <input
             type="text"
             placeholder="Search for a question..."
-            className="flex-1 bg-transparent outline-none text-lg text-white placeholder-gray-400"
+            className="flex-1 bg-transparent outline-none text-lg text-white placeholder-gray-400 italic"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />

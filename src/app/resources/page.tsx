@@ -133,7 +133,7 @@ export default function Resources() {
                 userEvents.map(event => (
                   <div key={event.id}>
                     <button
-                      className="text-xl font-bold text-purple-400 hover:text-purple-500 hover:cursor-pointer flex w-full text-left focus:outline-none"
+                      className="text-xl font-bold text-blue-400 hover:text-blue-500 hover:cursor-pointer flex w-full text-left focus:outline-none"
                       onClick={() => setExpanded(expanded === event.id ? null : event.id)}
                     >
                       <span
