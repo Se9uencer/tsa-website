@@ -11,6 +11,8 @@ export default function Profile() {
   const [showEventsModal, setShowEventsModal] = useState(false);
   const [userEvents, setUserEvents] = useState<any[]>([]);
   const [eventResourceLinks, setEventResourceLinks] = useState<{ [eventName: string]: { rubricUrl: string, resourcesUrl: string } }>({});
+  const [userXP, setUserXP] = useState<number>(0);
+  const [badgeImages, setBadgeImages] = useState<{ [badgeName: string]: string }>({});
   const router = useRouter();
 
   useEffect(() => {
@@ -20,16 +22,33 @@ export default function Profile() {
         router.replace('/signin');
       } else {
         setUser(data.user);
-        // Fetch user events from profiles table
+        // Fetch user events and XP from profiles table
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('events')
+          .select('events, points')
           .eq('id', data.user.id)
           .single();
-        if (!profileError && profile && Array.isArray(profile.events)) {
-          setUserEvents(profile.events);
+        if (!profileError && profile) {
+          if (Array.isArray(profile.events)) {
+            setUserEvents(profile.events);
+          } else {
+            setUserEvents([]);
+          }
+          setUserXP(profile.points || 0);
+          
+          // Fetch badge images
+          const badgeNames = ['Bronze', 'Silver', 'Gold', 'Website Wizard', 'State Scholar', 'National Nominee'];
+          const badgeImageUrls: { [badgeName: string]: string } = {};
+          
+          for (const badgeName of badgeNames) {
+            const imageUrl = await getBadgeImageUrl(badgeName);
+            badgeImageUrls[badgeName] = imageUrl;
+          }
+          
+          setBadgeImages(badgeImageUrls);
         } else {
           setUserEvents([]);
+          setUserXP(0);
         }
       }
       setLoading(false);
@@ -61,28 +80,91 @@ export default function Profile() {
   }, [userEvents]);
 
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Member';
-  const userRank = user?.user_metadata?.rank || 'Member';
 
-  // Temporary user data (to be replaced with Supabase in the future)
+  const pointThresholds = {
+    bronze: 50,
+    silver: 150,
+    gold: 300,
+  };
+
+  // Convert badge name to camel case for file naming
+  const toCamelCase = (str: string) => {
+    return str.replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => {
+      return index === 0 ? word.toLowerCase() : word.toUpperCase();
+    }).replace(/\s+/g, '');
+  };
+
+  // Get badge image URL from Supabase storage
+  const getBadgeImageUrl = async (badgeName: string) => {
+    const fileName = toCamelCase(badgeName) + '.png';
+    // Get a signed URL for 1 hour
+    const { data, error } = await supabase.storage
+      .from('badge-icons')
+      .createSignedUrl(fileName, 3600);
+    return data?.signedUrl || '/file.svg'; // fallback if not found
+  };
+  
+  // Calculate user rank based on XP
+  const calculateRank = (xp: number) => {
+    if (xp >= pointThresholds.gold) return 'Gold';
+    if (xp >= pointThresholds.silver) return 'Silver';
+    if (xp >= pointThresholds.bronze) return 'Bronze';
+    return 'Member';
+  };
+  
+  const userRank = calculateRank(userXP);
+
+  
+  // Calculate XP progress and next tier
+  const calculateXPProgress = (xp: number) => {
+    if (xp >= pointThresholds.gold) {
+      return { currentTier: 'Gold', nextTier: 'Gold', xpToNextTier: 0, xpPercent: 100 };
+    } else if (xp >= pointThresholds.silver) {
+      const progress = xp;
+      const needed = pointThresholds.gold;
+      return { 
+        currentTier: 'Silver', 
+        nextTier: 'Gold', 
+        xpToNextTier: pointThresholds.gold - xp, 
+        xpPercent: Math.min(100, (progress / needed) * 100) 
+      };
+    } else if (xp >= pointThresholds.bronze) {
+      const progress = xp;
+      const needed = pointThresholds.silver;
+      return { 
+        currentTier: 'Bronze', 
+        nextTier: 'Silver', 
+        xpToNextTier: pointThresholds.silver - xp, 
+        xpPercent: Math.min(100, (progress / needed) * 100) 
+      };
+    } else {
+      const progress = xp;
+      const needed = pointThresholds.bronze;
+      return { 
+        currentTier: 'Member', 
+        nextTier: 'Bronze', 
+        xpToNextTier: pointThresholds.bronze - xp, 
+        xpPercent: Math.min(100, (progress / needed) * 100) 
+      };
+    }
+  };
+
+  const xpProgress = calculateXPProgress(userXP);
+  
+  // User data with real XP from Supabase
   const userData = {
-    xp: 1200,
-    xpToNextTier: 300,
-    currentTier: 'Tier A',
-    nextTier: 'Tier B',
-    xpPercent: 80, // percent progress to next tier
+    xp: userXP,
+    xpToNextTier: xpProgress.xpToNextTier,
+    currentTier: xpProgress.currentTier,
+    nextTier: xpProgress.nextTier,
+    xpPercent: xpProgress.xpPercent,
     badges: [
-      { filled: true },
-      { filled: true },
-      { filled: true },
-      { filled: false },
-      { filled: true },
-      { filled: false },
-      { filled: true },
-      { filled: false },
-      { filled: true },
-      { filled: true },
-      { filled: false },
-      { filled: true },
+      { filled: (userXP >= pointThresholds["bronze"]), name: 'Bronze' },
+      { filled: (userXP >= pointThresholds["silver"]), name: 'Silver' },
+      { filled: (userXP >= pointThresholds["gold"]), name: 'Gold' },
+      { filled: true, name: 'Website Wizard' },
+      { filled: false, name: 'State Scholar' },   // later on we can add columns for these based on tally registration
+      { filled: false, name: 'National Nominee' },
     ],
     events: [
       {
@@ -143,7 +225,7 @@ export default function Profile() {
               <div className="w-full mt-2">
                 <div className="flex justify-between text-white text-lg font-semibold mb-1">
                   <span>{userData.currentTier}</span>
-                  <span>{userData.nextTier}</span>
+                  {userData.currentTier !== 'Gold' && <span>{userData.nextTier}</span>}
                 </div>
                 <div className="relative w-full h-8 bg-[#323345] rounded-full flex items-center">
                   <div
@@ -151,34 +233,65 @@ export default function Profile() {
                     style={{ width: `${xpBarWidth}%` }}
                   ></div>
                   <div className="w-full flex justify-center items-center relative z-10 text-white font-bold">
-                    {userData.xpToNextTier} XP to go!
+                    {userData.currentTier === 'Gold' ? `${userData.xp} XP` : `${userData.xpToNextTier} XP to go!`}
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Badges */}
-            <div
-              className="w-full max-w-full md:max-w-lg bg-[#181e29] rounded-3xl border border-[#232a3a] shadow-lg p-6 relative flex flex-col mt-10"
-              style={{ boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}
-              ref={badgeContainerRef}
-            >
-              <div className="text-3xl font-bold text-white mb-4 ml-2">Badges</div>
-              <div className="flex-1 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-[#232a3a] scrollbar-track-transparent relative">
-                <div className="flex gap-4 pb-2 min-w-max">
-                  {userData.badges.map((badge, idx) => (
-                    <div
-                      key={idx}
-                      className={badge.filled
-                        ? "w-20 h-20 rounded-full bg-[#e6d36a] border-4 border-black flex-shrink-0"
-                        : "w-20 h-20 rounded-full border-4 border-dashed border-black bg-transparent flex-shrink-0"
-                      }
-                    />
-                  ))}
+            <div className="w-full max-w-full md:max-w-lg bg-[#181e29] rounded-3xl border border-[#232a3a] shadow-lg relative flex flex-col p-6 mt-10"
+              style={{ boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}>
+              <div
+                className="overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-[#232a3a] scrollbar-track-transparent"
+                
+                ref={badgeContainerRef}
+              >
+                <div className="text-3xl font-bold text-white mb-4 ml-2">Badges</div>
+                <div className="flex-1 relative">
+                  <div className="flex gap-4 pb-2 min-w-max">
+                    {userData.badges.map((badge, idx) => (
+                      <div
+                        key={idx}
+                        className="relative group"
+                      >
+                        <img
+                          src={badgeImages[badge.name] || '/file.svg'}
+                          alt={badge.name}
+                          className={`w-20 h-20 flex-shrink-0 cursor-pointer transition-all duration-200 ${
+                            badge.filled 
+                              ? 'opacity-100 filter brightness-100' 
+                              : 'opacity-30 filter grayscale brightness-50'
+                          }`}
+                          onError={(e) => {
+                            // Fallback to circle if image fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            target.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                        {/* Fallback circle */}
+                        <div
+                          className={`w-20 h-20 rounded-full border-4 flex-shrink-0 cursor-pointer hidden ${
+                            badge.filled
+                              ? "bg-[#e6d36a] border-black"
+                              : "border-dashed border-black bg-transparent"
+                          }`}
+                        />
+                        {/* Tooltip */}
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-[#232a3a] text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                          {badge.name}
+                          {/* Tooltip arrow */}
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#232a3a]"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
                 </div>
-                {/* Fade indicator for scrollable content */}
-                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#181e29] to-transparent pointer-events-none" />
               </div>
+              {/* Fade indicator for scrollable content */}
+              <div className="absolute right-6 top-0 bottom-0 w-8 bg-gradient-to-l from-[#181e29] to-transparent pointer-events-none" />
             </div>
           </div>
 
