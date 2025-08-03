@@ -7,14 +7,19 @@ import { useRouter } from 'next/navigation';
 
 export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
   const [showEventsModal, setShowEventsModal] = useState(false);
   const [userEvents, setUserEvents] = useState<any[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
   const [eventResourceLinks, setEventResourceLinks] = useState<{ [eventName: string]: { rubricUrl: string, resourcesUrl: string } }>({});
+  const [resourcesLoading, setResourcesLoading] = useState(false);
   const [userXP, setUserXP] = useState<number>(0);
+  const [xpLoading, setXpLoading] = useState(false);
   const [badgeImages, setBadgeImages] = useState<{ [badgeName: string]: string }>({});
+  const [badgesLoading, setBadgesLoading] = useState(false);
   const router = useRouter();
 
+  // Auth check - runs first
   useEffect(() => {
     const checkUser = async () => {
       const { data, error } = await supabase.auth.getUser();
@@ -22,44 +27,58 @@ export default function Profile() {
         router.replace('/signin');
       } else {
         setUser(data.user);
-        // Fetch user events and XP from profiles table
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('events, points')
-          .eq('id', data.user.id)
-          .single();
-        if (!profileError && profile) {
-          if (Array.isArray(profile.events)) {
-            setUserEvents(profile.events);
-          } else {
-            setUserEvents([]);
-          }
-          setUserXP(profile.points || 0);
-          
-          // Fetch badge images
-          const badgeNames = ['Bronze', 'Silver', 'Gold', 'Website Wizard', 'State Scholar', 'National Nominee'];
-          const badgeImageUrls: { [badgeName: string]: string } = {};
-          
-          for (const badgeName of badgeNames) {
-            const imageUrl = await getBadgeImageUrl(badgeName);
-            badgeImageUrls[badgeName] = imageUrl;
-          }
-          
-          setBadgeImages(badgeImageUrls);
-        } else {
-          setUserEvents([]);
-          setUserXP(0);
-        }
+        // Start loading other data after auth is confirmed
+        loadUserData(data.user);
       }
-      setLoading(false);
+      setAuthLoading(false);
     };
     checkUser();
   }, [router]);
 
+  // Load all user data asynchronously
+  const loadUserData = async (user: User) => {
+    // Load XP and events
+    setXpLoading(true);
+    setEventsLoading(true);
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('events, points')
+      .eq('id', user.id)
+      .single();
+    
+    if (!profileError && profile) {
+      if (Array.isArray(profile.events)) {
+        setUserEvents(profile.events);
+      } else {
+        setUserEvents([]);
+      }
+      setUserXP(profile.points || 0);
+    } else {
+      setUserEvents([]);
+      setUserXP(0);
+    }
+    setXpLoading(false);
+    setEventsLoading(false);
+
+    // Load badge images from local files
+    setBadgesLoading(true);
+    const badgeNames = ['Bronze', 'Silver', 'Gold', 'Website Wizard', 'State Scholar', 'National Nominee'];
+    const badgeImageUrls: { [badgeName: string]: string } = {};
+    
+    for (const badgeName of badgeNames) {
+      const fileName = toCamelCase(badgeName) + '.png';
+      badgeImageUrls[badgeName] = `/images/badges/${fileName}`;
+    }
+    
+    setBadgeImages(badgeImageUrls);
+    setBadgesLoading(false);
+  };
+
+  // Load event resources when events are loaded
   useEffect(() => {
-    // Fetch resource links for the user's events
     const fetchEventResources = async () => {
       if (!userEvents || userEvents.length === 0) return;
+      setResourcesLoading(true);
       const eventNames = userEvents.map(e => e.name);
       const { data, error } = await supabase
         .from('resourcesDriveIDs')
@@ -75,6 +94,7 @@ export default function Profile() {
         });
         setEventResourceLinks(resourceMap);
       }
+      setResourcesLoading(false);
     };
     fetchEventResources();
   }, [userEvents]);
@@ -94,16 +114,6 @@ export default function Profile() {
     }).replace(/\s+/g, '');
   };
 
-  // Get badge image URL from Supabase storage
-  const getBadgeImageUrl = async (badgeName: string) => {
-    const fileName = toCamelCase(badgeName) + '.png';
-    // Get a signed URL for 1 hour
-    const { data, error } = await supabase.storage
-      .from('badge-icons')
-      .createSignedUrl(fileName, 3600);
-    return data?.signedUrl || '/file.svg'; // fallback if not found
-  };
-  
   // Calculate user rank based on XP
   const calculateRank = (xp: number) => {
     if (xp >= pointThresholds.gold) return 'Gold';
@@ -193,7 +203,7 @@ export default function Profile() {
   // Badge container ref for potential future enhancements
   const badgeContainerRef = useRef<HTMLDivElement>(null);
 
-  if (loading) {
+  if (authLoading) {
     return <div className="flex justify-center items-center min-h-screen text-white text-2xl">Loading...</div>;
   }
 
@@ -217,15 +227,17 @@ export default function Profile() {
                 />
                 <div>
                   <div className="text-3xl font-bold text-white">{userName}</div>
-                  <div className="text-xl font-semibold text-white mt-1">{userRank}</div>
+                  <div className="text-xl font-semibold text-white mt-1">
+                    {xpLoading ? 'Loading...' : userRank}
+                  </div>
                 </div>
               </div>
 
               {/* XP Progress Bar */}
               <div className="w-full mt-2">
                 <div className="flex justify-between text-white text-lg font-semibold mb-1">
-                  <span>{userData.currentTier}</span>
-                  {userData.currentTier !== 'Gold' && <span>{userData.nextTier}</span>}
+                  <span>{xpLoading ? 'Loading...' : userData.currentTier}</span>
+                  {!xpLoading && userData.currentTier !== 'Gold' && <span>{userData.nextTier}</span>}
                 </div>
                 <div className="relative w-full h-8 bg-[#323345] rounded-full flex items-center">
                   <div
@@ -233,7 +245,7 @@ export default function Profile() {
                     style={{ width: `${xpBarWidth}%` }}
                   ></div>
                   <div className="w-full flex justify-center items-center relative z-10 text-white font-bold">
-                    {userData.currentTier === 'Gold' ? `${userData.xp} XP` : `${userData.xpToNextTier} XP to go!`}
+                    {xpLoading ? 'Loading...' : (userData.currentTier === 'Gold' ? `${userData.xp} XP` : `${userData.xpToNextTier} XP to go!`)}
                   </div>
                 </div>
               </div>
@@ -249,44 +261,48 @@ export default function Profile() {
               >
                 <div className="text-3xl font-bold text-white mb-4 ml-2">Badges</div>
                 <div className="flex-1 relative">
-                  <div className="flex gap-4 pb-2 min-w-max">
-                    {userData.badges.map((badge, idx) => (
-                      <div
-                        key={idx}
-                        className="relative group"
-                      >
-                        <img
-                          src={badgeImages[badge.name] || '/file.svg'}
-                          alt={badge.name}
-                          className={`w-20 h-20 flex-shrink-0 cursor-pointer transition-all duration-200 ${
-                            badge.filled 
-                              ? 'opacity-100 filter brightness-100' 
-                              : 'opacity-30 filter grayscale brightness-50'
-                          }`}
-                          onError={(e) => {
-                            // Fallback to circle if image fails to load
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            target.nextElementSibling?.classList.remove('hidden');
-                          }}
-                        />
-                        {/* Fallback circle */}
+                  {badgesLoading ? (
+                    <div className="text-gray-400 text-center py-8">Loading badges...</div>
+                  ) : (
+                    <div className="flex gap-4 pb-2 min-w-max">
+                      {userData.badges.map((badge, idx) => (
                         <div
-                          className={`w-20 h-20 rounded-full border-4 flex-shrink-0 cursor-pointer hidden ${
-                            badge.filled
-                              ? "bg-[#e6d36a] border-black"
-                              : "border-dashed border-black bg-transparent"
-                          }`}
-                        />
-                        {/* Tooltip */}
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-[#232a3a] text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                          {badge.name}
-                          {/* Tooltip arrow */}
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#232a3a]"></div>
+                          key={idx}
+                          className="relative group"
+                        >
+                          <img
+                            src={badgeImages[badge.name]}
+                            alt={badge.name}
+                            className={`w-20 h-20 flex-shrink-0 cursor-pointer transition-all duration-200 ${
+                              badge.filled 
+                                ? 'opacity-100 filter brightness-100' 
+                                : 'opacity-30 filter grayscale brightness-50'
+                            }`}
+                            onError={(e) => {
+                              // Fallback to circle if image fails to load
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              target.nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                          {/* Fallback circle */}
+                          <div
+                            className={`w-20 h-20 rounded-full border-4 flex-shrink-0 cursor-pointer hidden ${
+                              badge.filled
+                                ? "bg-[#e6d36a] border-black"
+                                : "border-dashed border-black bg-transparent"
+                            }`}
+                          />
+                          {/* Tooltip */}
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-[#232a3a] text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                            {badge.name}
+                            {/* Tooltip arrow */}
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#232a3a]"></div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                   
                 </div>
               </div>
@@ -301,21 +317,29 @@ export default function Profile() {
               style={{ boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}>
               <div className="text-3xl font-bold text-white mb-6">Your Events</div>
               <div className="flex flex-col gap-7">
-                {userEvents.length === 0 ? (
+                {eventsLoading ? (
+                  <div className="text-gray-400 italic">Loading events...</div>
+                ) : userEvents.length === 0 ? (
                   <div className="text-gray-400 italic">You aren't registered in any events.</div>
                 ) : (
                   userEvents.slice(0, 4).map((event, idx) => (
                     <div key={event.id || idx}>
                       <div className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent">{event.name}</div>
                       <div className="flex gap-4 mt-1">
-                        <a href={eventResourceLinks[event.name]?.rubricUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Rubric <span className="text-blue-400">↗</span></a>
-                        <a href={eventResourceLinks[event.name]?.resourcesUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Resources <span className="text-blue-400">↗</span></a>
+                        {resourcesLoading ? (
+                          <span className="text-gray-400 text-lg">Loading resources...</span>
+                        ) : (
+                          <>
+                            <a href={eventResourceLinks[event.name]?.rubricUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Rubric <span className="text-blue-400">↗</span></a>
+                            <a href={eventResourceLinks[event.name]?.resourcesUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Resources <span className="text-blue-400">↗</span></a>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))
                 )}
               </div>
-              {userEvents.length >= 4 && (
+              {!eventsLoading && userEvents.length >= 4 && (
                 <div className="mt-8 text-right">
                   <button
                     className="text-xl italic text-purple-300 hover:underline hover:cursor-pointer focus:outline-none"
@@ -343,15 +367,23 @@ export default function Profile() {
             </button>
             <div className="text-3xl font-bold text-white mb-6">All Your Events</div>
             <div className="flex flex-col gap-7">
-              {userEvents.length === 0 ? (
+              {eventsLoading ? (
+                <div className="text-gray-400 italic">Loading events...</div>
+              ) : userEvents.length === 0 ? (
                 <div className="text-gray-400 italic">You aren't registered in any events.</div>
               ) : (
                 userEvents.map((event, idx) => (
                   <div key={event.id || idx} className="bg-[#232a3a] rounded-xl p-4">
                     <div className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent">{event.name}</div>
                     <div className="flex gap-4 mt-1">
-                      <a href={eventResourceLinks[event.name]?.rubricUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Rubric <span className="text-blue-400">↗</span></a>
-                      <a href={eventResourceLinks[event.name]?.resourcesUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Resources <span className="text-blue-400">↗</span></a>
+                      {resourcesLoading ? (
+                        <span className="text-gray-400 text-lg">Loading resources...</span>
+                      ) : (
+                        <>
+                          <a href={eventResourceLinks[event.name]?.rubricUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Rubric <span className="text-blue-400">↗</span></a>
+                          <a href={eventResourceLinks[event.name]?.resourcesUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Resources <span className="text-blue-400">↗</span></a>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))

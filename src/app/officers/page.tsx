@@ -30,59 +30,83 @@ interface Officer {
   favoriteEvent: string;
   bio: string;
   image: string; // public URL
+  imageLoading: boolean;
 }
 
 export default function Officers() {
   const router = useRouter();
   const [modalIndex, setModalIndex] = useState<number | null>(null);
   const [officers, setOfficers] = useState<Officer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [officersLoading, setOfficersLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Auth check - runs first
   useEffect(() => {
     const checkUser = async () => {
       const { data, error } = await supabase.auth.getUser();
       if (error || !data.user) {
         router.replace('/signin');
+      } else {
+        // Start loading officers data after auth is confirmed
+        loadOfficersData();
       }
+      setAuthLoading(false);
     };
     checkUser();
   }, [router]);
 
-  useEffect(() => {
-    const fetchOfficers = async () => {
-      setLoading(true);
-      setError(null);
-      const { data, error } = await supabase
-        .from('officers')
-        .select('name, position, favoriteEvent, bio')
-        .order('id', { ascending: true });
-      if (error) {
-        setError('Failed to load officers.');
-        setLoading(false);
-        return;
-      }
-      // For each officer, get the signed image URL from the private bucket
-      const officersWithImages: Officer[] = await Promise.all(
-        (data || []).map(async (officer: any) => {
-          const firstName = officer.name.split(' ')[0].toLowerCase();
-          // Get a signed URL for 1 hour
-          const { data: imgData, error: imgError } = await supabase.storage
-            .from('officer-photos')
-            .createSignedUrl(`${firstName}.jpg`, 3600);
-          return {
-            ...officer,
-            image: imgData?.signedUrl || '/file.svg', // fallback if not found
-          };
-        })
-      );
-      setOfficers(officersWithImages);
-      setLoading(false);
-    };
-    fetchOfficers();
-  }, []);
+  // Load officers data asynchronously
+  const loadOfficersData = async () => {
+    setOfficersLoading(true);
+    setError(null);
+    const { data, error } = await supabase
+      .from('officers')
+      .select('name, position, favoriteEvent, bio')
+      .order('id', { ascending: true });
+    
+    if (error) {
+      setError('Failed to load officers.');
+      setOfficersLoading(false);
+      return;
+    }
 
-  if (loading) {
+    // Initialize officers with loading state for images
+    const initialOfficers: Officer[] = (data || []).map((officer: any) => ({
+      ...officer,
+      image: '/file.svg', // placeholder
+      imageLoading: true,
+    }));
+    
+    setOfficers(initialOfficers);
+    setOfficersLoading(false);
+
+    // Load images asynchronously
+    loadOfficerImages(initialOfficers);
+  };
+
+  // Load officer images asynchronously
+  const loadOfficerImages = async (initialOfficers: Officer[]) => {
+    const officersWithImages: Officer[] = await Promise.all(
+      initialOfficers.map(async (officer: Officer) => {
+        const firstName = officer.name.split(' ')[0].toLowerCase();
+        // Get a signed URL for 1 hour
+        const { data: imgData, error: imgError } = await supabase.storage
+          .from('officer-photos')
+          .createSignedUrl(`${firstName}.jpg`, 3600);
+        
+        return {
+          ...officer,
+          image: imgData?.signedUrl || '/file.svg', // fallback if not found
+          imageLoading: false,
+        };
+      })
+    );
+    
+    setOfficers(officersWithImages);
+  };
+
+  if (authLoading) {
     return <div className="flex justify-center items-center min-h-screen text-white text-2xl">Loading...</div>;
   }
   if (error) {
@@ -94,25 +118,50 @@ export default function Officers() {
       <div className="h-16" />
       <h1 className="text-4xl md:text-4xl font-bold text-white mt-15 mb-15 text-center">Meet the North Creek TSA Board!</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 w-full max-w-6xl">
-        {officers.map((officer, i) => (
-          <div
-            key={i}
-            className="flex flex-col md:flex-row bg-[#181e29] border rounded-3xl shadow-xl overflow-hidden p-6 gap-6 items-center border-[#232a3a] h-72 min-h-72 max-h-72"
-            style={{ boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}
-          >
-            <div className="flex-shrink-0 flex items-center justify-center w-40 h-40 bg-[#232a3a] rounded-2xl border border-[#232a3a]/50">
-              <Image src={officer.image} alt="Image of officer" width={120} height={120} className="w-[90%] h-[90%] object-contain rounded-xl" />
-            </div>
-            <div className="flex-1 flex flex-col justify-center">
-              <div className="text-2xl font-bold text-white leading-tight">{officer.name}</div>
-              <div className={"text-lg font-semibold mt-1 bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent"}>{officer.position}</div>
-              <div className="mt-4 text-lg font-medium text-white">Favorite Event: <span className="bg-gradient-to-r from-sky-500 to-blue-500 bg-clip-text w-fit text-transparent">{officer.favoriteEvent}</span></div>
-              <div className="text-base text-white font-sm line-clamp-4 overflow-hidden">
-                {getBioWithReadMore(officer.bio, () => setModalIndex(i))}
+        {officersLoading ? (
+          // Show loading placeholders
+          Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex flex-col md:flex-row bg-[#181e29] border rounded-3xl shadow-xl overflow-hidden p-6 gap-6 items-center border-[#232a3a] h-72 min-h-72 max-h-72"
+              style={{ boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}
+            >
+              <div className="flex-shrink-0 flex items-center justify-center w-40 h-40 bg-[#232a3a] rounded-2xl border border-[#232a3a]/50">
+                <div className="text-gray-400 text-center">Loading...</div>
+              </div>
+              <div className="flex-1 flex flex-col justify-center">
+                <div className="text-2xl font-bold text-white leading-tight">Loading...</div>
+                <div className="text-lg font-semibold mt-1 bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent">Loading...</div>
+                <div className="mt-4 text-lg font-medium text-white">Loading...</div>
+                <div className="text-base text-white font-sm">Loading...</div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          officers.map((officer, i) => (
+            <div
+              key={i}
+              className="flex flex-col md:flex-row bg-[#181e29] border rounded-3xl shadow-xl overflow-hidden p-6 gap-6 items-center border-[#232a3a] h-72 min-h-72 max-h-72"
+              style={{ boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}
+            >
+              <div className="flex-shrink-0 flex items-center justify-center w-40 h-40 bg-[#232a3a] rounded-2xl border border-[#232a3a]/50">
+                {officer.imageLoading ? (
+                  <div className="text-gray-400 text-center">Loading...</div>
+                ) : (
+                  <Image src={officer.image} alt="Image of officer" width={120} height={120} className="w-[90%] h-[90%] object-contain rounded-xl" />
+                )}
+              </div>
+              <div className="flex-1 flex flex-col justify-center">
+                <div className="text-2xl font-bold text-white leading-tight">{officer.name}</div>
+                <div className={"text-lg font-semibold mt-1 bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent"}>{officer.position}</div>
+                <div className="mt-4 text-lg font-medium text-white">Favorite Event: <span className="bg-gradient-to-r from-sky-500 to-blue-500 bg-clip-text w-fit text-transparent">{officer.favoriteEvent}</span></div>
+                <div className="text-base text-white font-sm line-clamp-4 overflow-hidden">
+                  {getBioWithReadMore(officer.bio, () => setModalIndex(i))}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
       <div className="h-16" />
 
@@ -131,7 +180,13 @@ export default function Officers() {
               &times;
             </button>
             <div className="flex flex-col items-center">
-              <Image src={officers[modalIndex].image} alt="Profile" width={100} height={100} className="w-24 h-24 object-contain mb-4 border border-[#232a3a]/50" />
+              {officers[modalIndex].imageLoading ? (
+                <div className="w-24 h-24 flex items-center justify-center bg-[#232a3a] rounded-xl border border-[#232a3a]/50 mb-4">
+                  <div className="text-gray-400 text-center text-sm">Loading...</div>
+                </div>
+              ) : (
+                <Image src={officers[modalIndex].image} alt="Profile" width={100} height={100} className="w-24 h-24 object-contain mb-4 border border-[#232a3a]/50" />
+              )}
               <div className="text-2xl font-bold text-white mb-1">{officers[modalIndex].name}</div>
               <div className={"text-lg font-semibold mb-2 bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent mb-4"}>{officers[modalIndex].position}</div>
               <div className="text-base text-white text-center whitespace-pre-line">{officers[modalIndex].bio}</div>
