@@ -9,9 +9,9 @@ import { Fragment } from 'react';
 import Link from 'next/link';
 
 const placeholderEvents = [
-  { id: 1, title: 'TSA Regional Conference', date: '2024-07-15', type: 'conference', urgency: 'high', description: 'Annual regional TSA conference with competitions and workshops. This is a major event where teams from different schools compete in various STEM categories.' },
-  { id: 2, title: 'STEM Workshop', date: '2024-08-02', type: 'workshop', urgency: 'medium', description: 'Hands-on STEM workshop focusing on robotics and programming. Learn new skills and work on exciting projects with fellow TSA members.' },
-  { id: 3, title: 'Leadership Training', date: '2024-09-10', type: 'meeting', urgency: 'low', description: 'Leadership development session for current and aspiring TSA officers. Learn about team management, event planning, and effective communication.' },
+  { id: 1, title: 'TSA Regional Conference', date: '2025-07-15', type: 'conference', urgency: 'high', description: 'Annual regional TSA conference with competitions and workshops. This is a major event where teams from different schools compete in various STEM categories.' },
+  { id: 2, title: 'STEM Workshop', date: '2025-08-02', type: 'workshop', urgency: 'medium', description: 'Hands-on STEM workshop focusing on robotics and programming. Learn new skills and work on exciting projects with fellow TSA members.' },
+  { id: 3, title: 'Leadership Training', date: '2025-09-10', type: 'meeting', urgency: 'low', description: 'Leadership development session for current and aspiring TSA officers. Learn about team management, event planning, and effective communication.' },
 ];
 
 const placeholderAnnouncements = [
@@ -206,8 +206,20 @@ export default function Dashboard() {
   const year = now.getFullYear();
   const month = now.getMonth();
   const days = getDaysInMonth(year, month);
-  const eventDates = placeholderEvents.map(e => new Date(e.date).getDate());
-  const eventMap = Object.fromEntries(placeholderEvents.map(e => [new Date(e.date).getDate(), e]));
+  const eventDates = placeholderEvents
+    .filter(e => {
+      const eventDate = new Date(e.date);
+      return eventDate.getFullYear() === year && eventDate.getMonth() === month;
+    })
+    .map(e => new Date(e.date).getDate());
+  const eventMap = Object.fromEntries(
+    placeholderEvents
+      .filter(e => {
+        const eventDate = new Date(e.date);
+        return eventDate.getFullYear() === year && eventDate.getMonth() === month;
+      })
+      .map(e => [new Date(e.date).getDate(), e])
+  );
 
   return (
     <div className="min-h-screen bg-[#0a101f] text-white flex flex-col">
@@ -319,8 +331,8 @@ export default function Dashboard() {
           onClick={() => router.push('/calendar')}
         >
           {days.map(day => {
-            const isEvent = eventDates.includes(day);
-            const event = eventMap[day];
+            const isEvent = eventDates.includes(day-1);
+            const event = eventMap[day-1];
             return (
               <div
                 key={day}
