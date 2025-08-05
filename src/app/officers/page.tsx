@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
-// Helper to truncate bio after about 3 lines, then add '... read more' on the 4th line
 function getBioWithReadMore(bio: string, onClick: () => void) {
   return (
     <div className="mt-4 text-base text-white font-normal">
@@ -39,7 +38,6 @@ export default function Officers() {
   const [officersLoading, setOfficersLoading] = useState(false);
   const [groupImageUrl, setGroupImageUrl] = useState<string | null>(null);
 
-  // Auth check
   useEffect(() => {
     const checkUser = async () => {
       const { data, error } = await supabase.auth.getUser();
@@ -53,7 +51,6 @@ export default function Officers() {
     checkUser();
   }, [router]);
 
-  // Load officers
   const loadOfficersData = async () => {
     setOfficersLoading(true);
     const { data, error } = await supabase
@@ -95,7 +92,7 @@ export default function Officers() {
   const fetchInternGroupImage = async () => {
     const { data, error } = await supabase.storage
       .from("officer-photos")
-      .createSignedUrl("fellow.jpg", 3600);
+      .createSignedUrl("fellows.jpg", 3600);
     if (!error && data?.signedUrl) setGroupImageUrl(data.signedUrl);
   };
 
@@ -110,7 +107,7 @@ export default function Officers() {
   return (
     <div className="min-h-screen bg-[#0a101f] px-4 flex flex-col items-center">
       <div className="h-16" />
-      <h1 className="text-4xl md:text-4xl font-bold text-white mt-15 mb-15 text-center">
+      <h1 className="text-4xl font-bold text-white mt-15 mb-15 text-center">
         Meet the North Creek TSA Board!
       </h1>
 
@@ -119,44 +116,33 @@ export default function Officers() {
           ? Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="flex flex-col md:flex-row bg-[#181e29] border rounded-3xl shadow-xl overflow-hidden p-6 gap-6 items-center border-[#232a3a] h-72 min-h-72 max-h-72"
+                className="flex flex-col md:flex-row bg-[#181e29] border rounded-3xl shadow-xl overflow-hidden p-6 gap-6 items-center border-[#232a3a] h-72"
                 style={{
                   boxShadow:
                     "0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a",
                 }}
               >
-                <div className="flex-shrink-0 flex items-center justify-center w-40 h-40 bg-[#232a3a] rounded-2xl border border-[#232a3a]/50">
-                  <div className="text-gray-400 text-center">Loading...</div>
-                </div>
-                <div className="flex-1 flex flex-col justify-center">
-                  <div className="text-2xl font-bold text-white leading-tight">
-                    Loading...
-                  </div>
-                  <div className="text-lg font-semibold mt-1 bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent">
-                    Loading...
-                  </div>
-                  <div className="mt-4 text-lg font-medium text-white">
-                    Loading...
-                  </div>
+                <div className="w-40 h-40 bg-[#232a3a] rounded-2xl border border-[#232a3a]/50 flex items-center justify-center text-gray-400">
+                  Loading...
                 </div>
               </div>
             ))
           : officers.map((officer, i) => (
               <div
                 key={i}
-                className="flex flex-col md:flex-row bg-[#181e29] border rounded-3xl shadow-xl overflow-hidden p-6 gap-6 items-center border-[#232a3a] h-72 min-h-72 max-h-72"
+                className="flex flex-col md:flex-row bg-[#181e29] border rounded-3xl shadow-xl overflow-hidden p-6 gap-6 items-center border-[#232a3a] h-72"
                 style={{
                   boxShadow:
                     "0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a",
                 }}
               >
-                <div className="flex-shrink-0 flex items-center justify-center w-40 h-40 bg-[#232a3a] rounded-2xl border border-[#232a3a]/50">
+                <div className="w-40 h-40 bg-[#232a3a] rounded-2xl border border-[#232a3a]/50 flex items-center justify-center">
                   {officer.imageLoading ? (
-                    <div className="text-gray-400 text-center">Loading...</div>
+                    <div className="text-gray-400">Loading...</div>
                   ) : (
                     <Image
                       src={officer.image}
-                      alt="Image of officer"
+                      alt="Officer"
                       width={120}
                       height={120}
                       className="w-[90%] h-[90%] object-contain rounded-xl"
@@ -164,15 +150,15 @@ export default function Officers() {
                   )}
                 </div>
                 <div className="flex-1 flex flex-col justify-center">
-                  <div className="text-2xl font-bold text-white leading-tight">
+                  <div className="text-2xl font-bold text-white">
                     {officer.name}
                   </div>
-                  <div className="text-lg font-semibold mt-1 bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent">
+                  <div className="text-lg font-semibold mt-1 bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent">
                     {officer.position}
                   </div>
                   <div className="mt-4 text-lg font-medium text-white">
                     Favorite Event:{" "}
-                    <span className="bg-gradient-to-r from-sky-500 to-blue-500 bg-clip-text w-fit text-transparent">
+                    <span className="bg-gradient-to-r from-sky-500 to-blue-500 bg-clip-text text-transparent">
                       {officer.favoriteEvent}
                     </span>
                   </div>
@@ -182,7 +168,7 @@ export default function Officers() {
             ))}
       </div>
 
-      {/* Interns Section */}
+      {/* Executive Interns Section */}
       <div className="w-full max-w-4xl mt-24 text-center">
         <div
           className="bg-[#181e29] border border-[#232a3a] rounded-3xl shadow-lg p-8 flex flex-col items-center"
@@ -191,22 +177,21 @@ export default function Officers() {
               "0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a",
           }}
         >
-          <h2 className="text-3xl font-bold text-white mb-4">
+          <h2 className="text-3xl font-bold text-white mb-6">
             TSA Executive Interns
           </h2>
           {groupImageUrl && (
             <Image
               src={groupImageUrl}
-              alt="Executive Interns"
-              width={400}
-              height={300}
-              className="rounded-xl mb-6 border border-[#232a3a]"
+              alt="Executive Interns Group"
+              width={600}
+              height={400}
+              className="rounded-2xl border border-[#232a3a] mb-6"
+              unoptimized
             />
           )}
           <p className="text-white text-lg leading-relaxed max-w-2xl">
-            <span className="font-bold text-blue-400">
-              Current Interns:
-            </span>{" "}
+            <span className="font-bold text-blue-400">Current Interns:</span>{" "}
             Anay Arya, Akal Singh, Tejsimha Tummapudi, Varenya Pothukuchi.
             <br />
             <br />
@@ -223,8 +208,8 @@ export default function Officers() {
               Contact us{" "}
               <Link
                 href="https://tsa-website-chi.vercel.app/contact"
-                className="text-blue-400 underline hover:text-blue-500"
                 target="_blank"
+                className="text-blue-400 underline hover:text-blue-500"
               >
                 here
               </Link>
@@ -234,7 +219,7 @@ export default function Officers() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Officer Bio Modal */}
       {modalIndex !== null && officers[modalIndex] && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <div
@@ -245,7 +230,7 @@ export default function Officers() {
             }}
           >
             <button
-              className="absolute top-4 right-4 text-gray-400 hover:text-white text-3xl font-bold focus:outline-none"
+              className="absolute top-4 right-4 text-gray-400 hover:text-white text-3xl font-bold"
               onClick={() => setModalIndex(null)}
               aria-label="Close"
             >
@@ -254,7 +239,7 @@ export default function Officers() {
             <div className="flex flex-col items-center">
               <Image
                 src={officers[modalIndex].image}
-                alt="Profile"
+                alt="Officer"
                 width={100}
                 height={100}
                 className="w-24 h-24 object-contain mb-4 border border-[#232a3a]/50"
@@ -262,7 +247,7 @@ export default function Officers() {
               <div className="text-2xl font-bold text-white mb-1">
                 {officers[modalIndex].name}
               </div>
-              <div className="text-lg font-semibold bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent mb-4">
+              <div className="text-lg font-semibold bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent mb-4">
                 {officers[modalIndex].position}
               </div>
               <div className="text-base text-white text-center whitespace-pre-line">
