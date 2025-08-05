@@ -236,131 +236,133 @@ export default function Leaderboard() {
     : leaderboard;
 
   return (
-    <div
-      className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto mt-24 px-4 min-h-screen"
-      style={{ backgroundColor: "#0e111a" }}
-    >
-      {selectedUser && <UserPopup user={selectedUser} onClose={() => setSelectedUser(null)} />}
-      {showAddPopup && (
-        <AddFriendPopup
-          allUsers={allUsers}
-          onClose={() => setShowAddPopup(false)}
-          onAdd={handleAddFriend}
-          currentUserId={currentUserId}
-          friends={friends}
-        />
-      )}
-
-      {/* Leaderboard Panel */}
+    <div className="w-[100%] bg-[#0e111a]">
       <div
-        className="flex-1 p-8 rounded-2xl shadow-lg border border-[#232a3a] flex flex-col"
-        style={{ backgroundColor: "#181e29", boxShadow: "0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a" }}
+        className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto mt-16 py-16 px-4 min-h-screen"
+        style={{ backgroundColor: "#0e111a" }}
       >
-        <h1 className="text-5xl font-extrabold text-blue-200 mb-2 text-center">Leaderboard</h1>
+        {selectedUser && <UserPopup user={selectedUser} onClose={() => setSelectedUser(null)} />}
+        {showAddPopup && (
+          <AddFriendPopup
+            allUsers={allUsers}
+            onClose={() => setShowAddPopup(false)}
+            onAdd={handleAddFriend}
+            currentUserId={currentUserId}
+            friends={friends}
+          />
+        )}
 
-        {/* Tier Filter Buttons */}
-        <div className="flex justify-center gap-4 mb-6">
-          {["Gold", "Silver", "Bronze"].map((tier) => (
-            <button
-              key={tier}
-              className={`px-4 py-2 rounded-lg border font-semibold text-base
-                ${tierColors[tier]}
-                ${filterTier === tier ? "ring-2 ring-blue-400" : "hover:ring-1 hover:ring-blue-300"}
-              `}
-              onClick={() => setFilterTier(filterTier === tier ? null : tier)}
-            >
-              {tier}
-            </button>
-          ))}
-        </div>
-
-        <div className="overflow-x-auto max-h-[400px] overflow-y-auto rounded-lg border border-[#232a3a] bg-[#232a3a]/20">
-          <table className="min-w-full text-white text-lg">
-            <thead>
-              <tr className="border-b border-[#232a3a] sticky top-0 bg-[#181e29]">
-                <th className="py-3 px-4 text-left">Rank</th>
-                <th className="py-3 px-4 text-left">Name</th>
-                <th className="py-3 px-4 text-left">Points</th>
-                <th className="py-3 px-4 text-left">Tier</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredLeaderboard.map((row, idx) => (
-                <tr key={row.id} className="border-b border-[#232a3a] hover:bg-[#2a3245] cursor-pointer">
-                  <td className="py-2 px-4">{idx + 1}</td>
-                  <td className="py-2 px-4">
-                    <button
-                      className="text-blue-400 hover:underline"
-                      onClick={() => setSelectedUser(row)}
-                    >
-                      {row.full_name || "Unknown"}
-                    </button>
-                  </td>
-                  <td className="py-2 px-4">{row.points ?? 0}</td>
-                  <td className="py-2 px-4">
-                    <span
-                      className={`px-3 py-1 rounded-lg border font-semibold text-base ${tierColors[getTier(row.points ?? 0)]}`}
-                    >
-                      {getTier(row.points ?? 0)}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              {filteredLeaderboard.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="text-center py-6 text-gray-400">
-                    No users in this tier.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Friends Dashboard */}
-      <div
-        className="w-full lg:w-80 flex-shrink-0 p-6 rounded-2xl shadow-lg border border-[#232a3a] flex flex-col"
-        style={{ backgroundColor: "#181e29", boxShadow: "0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a" }}
-      >
-        <h2 className="text-2xl font-bold text-blue-200 mb-4 text-center">Friends Dashboard</h2>
-        <div className="max-h-[400px] overflow-y-auto">
-          <ul className="flex flex-col gap-4">
-            {friends
-              .sort((a, b) => (b.points ?? 0) - (a.points ?? 0))
-              .map((friend) => (
-                <li
-                  key={friend.id}
-                  className={`flex items-center gap-4 p-3 rounded-xl border border-[#232a3a] bg-[#232a3a]/30`}
-                >
-                  <div className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-900 text-blue-300 font-bold text-xl border border-blue-700">
-                    {friend.full_name ? friend.full_name[0] : "?"}
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-semibold text-white">{friend.full_name || "Unknown"}</div>
-                    <div className="text-sm text-gray-400">{friend.points ?? 0} pts</div>
-                  </div>
-                  <button
-                    onClick={() => handleRemoveFriend(friend.id)}
-                    className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 text-sm"
-                    title="Remove Friend"
-                  >
-                    Remove
-                  </button>
-                </li>
-              ))}
-            {friends.length === 0 && (
-              <li className="text-gray-400 italic text-center py-6">You have no friends added.</li>
-            )}
-          </ul>
-        </div>
-        <div className="mt-6 text-center text-sm text-gray-400">Compare your progress with your friends!</div>
-        <button
-          onClick={() => setShowAddPopup(true)}
-          className="mt-4 w-full py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition"
+        {/* Leaderboard Panel */}
+        <div
+          className="flex-1 p-8 rounded-2xl shadow-lg border border-[#232a3a] flex flex-col"
+          style={{ backgroundColor: "#181e29", boxShadow: "0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a" }}
         >
-          Add Friends
-        </button>
+          <h1 className="text-5xl font-extrabold text-blue-200 mb-4 text-center">Leaderboard</h1>
+
+          {/* Tier Filter Buttons */}
+          <div className="flex justify-center gap-4 mb-6">
+            {["Gold", "Silver", "Bronze"].map((tier) => (
+              <button
+                key={tier}
+                className={`px-4 py-2 rounded-lg border font-semibold text-base
+                  ${tierColors[tier]}
+                  ${filterTier === tier ? "ring-2 ring-blue-400" : "hover:ring-1 hover:ring-blue-300"}
+                `}
+                onClick={() => setFilterTier(filterTier === tier ? null : tier)}
+              >
+                {tier}
+              </button>
+            ))}
+          </div>
+
+          <div className="overflow-x-auto max-h-[400px] overflow-y-auto rounded-lg border border-[#232a3a] bg-[#232a3a]/20">
+            <table className="min-w-full text-white text-lg">
+              <thead>
+                <tr className="border-b border-[#232a3a] sticky top-0 bg-[#181e29]">
+                  <th className="py-3 px-4 text-left">Rank</th>
+                  <th className="py-3 px-4 text-left">Name</th>
+                  <th className="py-3 px-4 text-left">Points</th>
+                  <th className="py-3 px-4 text-left">Tier</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredLeaderboard.map((row, idx) => (
+                  <tr key={row.id} className="border-b border-[#232a3a] hover:bg-[#2a3245] cursor-pointer">
+                    <td className="py-2 px-4">{idx + 1}</td>
+                    <td className="py-2 px-4">
+                      <button
+                        className="text-blue-400 hover:underline"
+                        onClick={() => setSelectedUser(row)}
+                      >
+                        {row.full_name || "Unknown"}
+                      </button>
+                    </td>
+                    <td className="py-2 px-4">{row.points ?? 0}</td>
+                    <td className="py-2 px-4">
+                      <span
+                        className={`px-3 py-1 rounded-lg border font-semibold text-base ${tierColors[getTier(row.points ?? 0)]}`}
+                      >
+                        {getTier(row.points ?? 0)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {filteredLeaderboard.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="text-center py-6 text-gray-400">
+                      No users in this tier.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Friends Dashboard */}
+        <div
+          className="w-full lg:w-80 flex-shrink-0 p-6 rounded-2xl shadow-lg border border-[#232a3a] flex flex-col"
+          style={{ backgroundColor: "#181e29", boxShadow: "0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a" }}
+        >
+          <h2 className="text-2xl font-bold text-blue-200 mb-4 text-center">Friends Dashboard</h2>
+          <div className="max-h-[400px] overflow-y-auto">
+            <ul className="flex flex-col gap-4">
+              {friends
+                .sort((a, b) => (b.points ?? 0) - (a.points ?? 0))
+                .map((friend) => (
+                  <li
+                    key={friend.id}
+                    className={`flex items-center gap-4 p-3 rounded-xl border border-[#232a3a] bg-[#232a3a]/30`}
+                  >
+                    <div className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-900 text-blue-300 font-bold text-xl border border-blue-700">
+                      {friend.full_name ? friend.full_name[0] : "?"}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold text-white">{friend.full_name || "Unknown"}</div>
+                      <div className="text-sm text-gray-400">{friend.points ?? 0} pts</div>
+                    </div>
+                    <button
+                      onClick={() => handleRemoveFriend(friend.id)}
+                      className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 text-sm"
+                      title="Remove Friend"
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              {friends.length === 0 && (
+                <li className="text-gray-400 italic text-center py-6">You have no friends added.</li>
+              )}
+            </ul>
+          </div>
+          <div className="mt-6 text-center text-sm text-gray-400">Compare your progress with your friends!</div>
+          <button
+            onClick={() => setShowAddPopup(true)}
+            className="mt-4 w-full py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition"
+          >
+            Add Friends
+          </button>
+        </div>
       </div>
     </div>
   );
