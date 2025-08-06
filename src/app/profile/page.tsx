@@ -126,38 +126,40 @@ export default function Profile() {
 
   
   // Calculate XP progress and next tier
-  const calculateXPProgress = (xp: number) => {
-    if (xp >= pointThresholds.gold) {
-      return { currentTier: 'Gold', nextTier: 'Gold', xpToNextTier: 0, xpPercent: 100 };
-    } else if (xp >= pointThresholds.silver) {
-      const progress = xp;
-      const needed = pointThresholds.gold;
-      return { 
-        currentTier: 'Silver', 
-        nextTier: 'Gold', 
-        xpToNextTier: pointThresholds.gold - xp, 
-        xpPercent: Math.min(100, (progress / needed) * 100) 
-      };
-    } else if (xp >= pointThresholds.bronze) {
-      const progress = xp;
-      const needed = pointThresholds.silver;
-      return { 
-        currentTier: 'Bronze', 
-        nextTier: 'Silver', 
-        xpToNextTier: pointThresholds.silver - xp, 
-        xpPercent: Math.min(100, (progress / needed) * 100) 
-      };
-    } else {
-      const progress = xp;
-      const needed = pointThresholds.bronze;
-      return { 
-        currentTier: 'Member', 
-        nextTier: 'Bronze', 
-        xpToNextTier: pointThresholds.bronze - xp, 
-        xpPercent: Math.min(100, (progress / needed) * 100) 
-      };
-    }
-  };
+const calculateXPProgress = (xp: number) => {
+  // UI: Bronze (0-49), Silver (50-149), Gold (150+)
+  if (xp < pointThresholds.bronze) {
+    // Between Bronze and Silver
+    const progress = xp;
+    const needed = pointThresholds.bronze;
+    return { 
+      currentTier: 'Bronze', 
+      nextTier: 'Silver', 
+      xpToNextTier: pointThresholds.bronze - xp, 
+      // Bar fills from 0 to 100% between 0 and 50
+      xpPercent: Math.min(100, (progress / needed) * 100) 
+    };
+  } else if (xp < pointThresholds.silver) {
+    // Between Silver and Gold, but not yet at Silver
+    const progress = xp - pointThresholds.bronze;
+    const needed = pointThresholds.silver - pointThresholds.bronze;
+    return { 
+      currentTier: 'Silver', 
+      nextTier: 'Gold', 
+      xpToNextTier: pointThresholds.silver - xp, 
+      // Bar fills from 0 to 100% between 50 and 150
+      xpPercent: Math.min(100, (progress / needed) * 100) 
+    };
+  } else {
+    // 150 or more: Bar is full, label stays between Silver and Gold
+    return { 
+      currentTier: 'Gold', 
+      nextTier: 'Gold', 
+      xpToNextTier: 0, 
+      xpPercent: 100 
+    };
+  }
+};
 
   const xpProgress = calculateXPProgress(userXP);
   
@@ -169,11 +171,11 @@ export default function Profile() {
     nextTier: xpProgress.nextTier,
     xpPercent: xpProgress.xpPercent,
     badges: [
-      { filled: (userXP >= pointThresholds["bronze"]), name: 'Bronze' },
-      { filled: (userXP >= pointThresholds["silver"]), name: 'Silver' },
-      { filled: (userXP >= pointThresholds["gold"]), name: 'Gold' },
+      { filled: true, name: 'Bronze' }, // Always shown
+      { filled: (userXP >= pointThresholds["bronze"]), name: 'Silver' }, // 50+
+      { filled: (userXP >= pointThresholds["silver"]), name: 'Gold' },   // 150+
       { filled: true, name: 'Website Wizard' },
-      { filled: false, name: 'State Scholar' },   // later on we can add columns for these based on tally registration
+      { filled: false, name: 'State Scholar' },
       { filled: false, name: 'National Nominee' },
     ],
     events: [
@@ -234,10 +236,20 @@ export default function Profile() {
               </div>
 
               {/* XP Progress Bar */}
+              {/* XP Progress Bar */}
               <div className="w-full mt-2">
                 <div className="flex justify-between text-white text-lg font-semibold mb-1">
-                  <span>{xpLoading ? 'Loading...' : userData.currentTier}</span>
-                  {!xpLoading && userData.currentTier !== 'Gold' && <span>{userData.nextTier}</span>}
+                  {userXP < pointThresholds.bronze ? (
+                    <>
+                      <span>Bronze</span>
+                      <span>Silver</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Silver</span>
+                      <span>Gold</span>
+                    </>
+                  )}
                 </div>
                 <div className="relative w-full h-8 bg-[#323345] rounded-full flex items-center">
                   <div
@@ -245,7 +257,7 @@ export default function Profile() {
                     style={{ width: `${xpBarWidth}%` }}
                   ></div>
                   <div className="w-full flex justify-center items-center relative z-10 text-white font-bold">
-                    {xpLoading ? 'Loading...' : (userData.currentTier === 'Gold' ? `${userData.xp} XP` : `${userData.xpToNextTier} XP to go!`)}
+                    {xpLoading ? 'Loading...' : `${userData.xp} Points`}
                   </div>
                 </div>
               </div>
