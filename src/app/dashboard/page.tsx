@@ -127,6 +127,16 @@ export default function Dashboard() {
   const [registerLoading, setRegisterLoading] = useState(false);
   const [userEvents, setUserEvents] = useState<any[]>([]);
   const [availableEvents, setAvailableEvents] = useState<any[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAddAnnouncement, setShowAddAnnouncement] = useState(false);
+  const [newAnnouncement, setNewAnnouncement] = useState({
+    title: '',
+    date: '',
+    description: ''
+  });
+  const [savingAnnouncement, setSavingAnnouncement] = useState(false);
 
   // Fetch available events from master_competitive_events
   useEffect(() => {
@@ -139,6 +149,58 @@ export default function Dashboard() {
       }
     };
     fetchEvents();
+  }, []);
+
+  // Fetch real upcoming events from Supabase
+  useEffect(() => {
+    const fetchUpcomingEvents = async () => {
+      const { data, error } = await supabase
+        .from('calendar')
+        .select('id, event, date, type, urgency, description')
+        .order('date', { ascending: true });
+      if (!error && data) {
+        const now = new Date();
+        const filtered = data.filter(e => new Date(e.date) >= now);
+        setUpcomingEvents(filtered);
+      }
+    };
+    fetchUpcomingEvents();
+  }, []);
+
+  // Fetch real announcements from Supabase
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      const { data, error } = await supabase
+        .from('announcements')
+        .select('id, title, date, description')
+        .order('date', { ascending: false });
+      if (!error && data) {
+        setAnnouncements(data);
+      }
+    };
+    fetchAnnouncements();
+  }, []);
+
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('admin')
+          .eq('id', user.id)
+          .single();
+        if (!error && profile && profile.admin === true) {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    };
+    checkAdmin();
   }, []);
 
   useEffect(() => {
@@ -232,7 +294,7 @@ export default function Dashboard() {
       />
 
       {/* Spacer for nav */}
-      <div className="h-24" />
+      <div className="h-32" />
 
       <div className="flex flex-col lg:flex-row gap-8 px-4 pb-8 max-w-5xl w-full mx-auto">
         {/* Main Content */}
@@ -252,13 +314,22 @@ export default function Dashboard() {
             style={{ boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}
           >
             <h2 className="text-xl font-semibold mb-4">Upcoming Events</h2>
-            {placeholderEvents.length > 0 ? (
+            {upcomingEvents.length > 0 ? (
               <ul className="space-y-4">
-                {placeholderEvents.slice(0, 3).map(event => (
+                {upcomingEvents.slice(0, 3).map(event => (
                   <li key={event.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
-                      <div className="font-medium">{event.title}</div>
-                      <div className="text-gray-400 text-sm">{event.date}</div>
+                      <div className="font-medium">{event.event}</div>
+                      <div className="text-gray-400 text-sm">
+                        {new Date(event.date).toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: true
+                        })}
+                      </div>
                     </div>
                     <button 
                       onClick={() => handleViewEventDetails(event)}
@@ -291,7 +362,8 @@ export default function Dashboard() {
             >
               My Profile
             </button>
-            <button className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow hover:bg-blue-900/30 transition">Submit Project</button>
+            {/* disabled for now */}
+            <button disabled={true} className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow cursor-not-allowed">Register</button>
             <button className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow hover:bg-blue-900/30 transition" onClick={() => router.push('/contact')}>Contact Us</button>
           </div>
         </div>
@@ -303,15 +375,112 @@ export default function Dashboard() {
             style={{ boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}
           >
             <h2 className="text-xl font-semibold mb-4">Announcements</h2>
-            <div className="flex-1 overflow-y-auto max-h-80 pr-2">
-              {placeholderAnnouncements.map(ann => (
-                <div key={ann.id} className="mb-6 last:mb-0">
-                  <div className="font-medium mb-1">{ann.title}</div>
-                  <div className="text-gray-400 text-xs mb-1">{ann.timestamp}</div>
-                  <div className="text-gray-300 text-sm line-clamp-2">{ann.preview}</div>
-                </div>
-              ))}
+            <div className="overflow-y-auto max-h-80 scrollbar-thin scrollbar-thumb-[#232a3a] scrollbar-track-transparent">
+              {announcements.length > 0 ? (
+                announcements.map(ann => (
+                  <div key={ann.id} className="mb-6 last:mb-0">
+                    <div className="font-medium mb-1">{ann.title}</div>
+                    <div className="text-gray-400 text-xs mb-1">
+                      {new Date(ann.date).toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
+                    </div>
+                    <div className="text-gray-300 text-sm line-clamp-2">{ann.description}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-400">No announcements yet.</div>
+              )}
             </div>
+            {isAdmin && (
+              <div className="w-full flex justify-center mt-10">
+                <button
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition"
+                  onClick={() => setShowAddAnnouncement(true)}
+                >
+                  Add Announcement
+                </button>
+              </div>
+            )}
+            {/* Add Announcement Modal */}
+            {showAddAnnouncement && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-fade-in">
+                <div className="bg-[#181e29] rounded-2xl shadow-2xl border border-[#232a3a] p-8 w-full max-w-md relative">
+                  <button
+                    className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold focus:outline-none"
+                    onClick={() => setShowAddAnnouncement(false)}
+                    aria-label="Close"
+                  >
+                    &times;
+                  </button>
+                  <div className="flex flex-col gap-4">
+                    <div className="text-2xl font-bold text-white mb-2">Add Announcement</div>
+                    <label className="text-sm font-medium text-white">Title</label>
+                    <input
+                      type="text"
+                      className="w-full p-2 rounded-lg bg-[#232a3a] border border-[#3a4151] text-white"
+                      value={newAnnouncement.title}
+                      onChange={e => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
+                      placeholder="Announcement title"
+                    />
+                    <label className="text-sm font-medium text-white">Date & Time</label>
+                    <input
+                      type="datetime-local"
+                      className="w-full p-2 rounded-lg bg-[#232a3a] border border-[#3a4151] text-white"
+                      value={newAnnouncement.date}
+                      onChange={e => setNewAnnouncement({ ...newAnnouncement, date: e.target.value })}
+                    />
+                    <label className="text-sm font-medium text-white">Description</label>
+                    <textarea
+                      className="w-full p-2 rounded-lg bg-[#232a3a] border border-[#3a4151] text-white"
+                      value={newAnnouncement.description}
+                      onChange={e => setNewAnnouncement({ ...newAnnouncement, description: e.target.value })}
+                      placeholder="Announcement description"
+                      rows={4}
+                    />
+                    <button
+                      className="mt-4 w-full py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition disabled:opacity-50"
+                      disabled={savingAnnouncement || !newAnnouncement.title || !newAnnouncement.date || !newAnnouncement.description}
+                      onClick={async () => {
+                        setSavingAnnouncement(true);
+                        // Insert into Supabase
+                        const { error } = await supabase
+                          .from('announcements')
+                          .insert([
+                            {
+                              title: newAnnouncement.title,
+                              date: newAnnouncement.date,
+                              description: newAnnouncement.description
+                            }
+                          ]);
+                        setSavingAnnouncement(false);
+                        if (!error) {
+                          setShowAddAnnouncement(false);
+                          setNewAnnouncement({ title: '', date: '', description: '' });
+                          // Refresh announcements
+                          const { data, error: fetchError } = await supabase
+                            .from('announcements')
+                            .select('id, title, date, description')
+                            .order('date', { ascending: false });
+                          if (!fetchError && data) {
+                            setAnnouncements(data);
+                          }
+                        } else {
+                          alert('Failed to add announcement.');
+                        }
+                      }}
+                    >
+                      {savingAnnouncement ? 'Saving...' : 'Save Announcement'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
