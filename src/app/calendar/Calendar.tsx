@@ -6,18 +6,12 @@ import { useSearchParams } from 'next/navigation';
 
 interface Event {
   id: string;
-  title: string;
-  date: string;
-  time: string; // New field, format: 'HH:mm'
-  type: 'meeting' | 'due_date' | 'conference' | 'workshop' | 'custom';
+  event: string;
+  date: string; // ISO string
+  type: string; // Now any string
   urgency: 'low' | 'medium' | 'high';
   description?: string;
-  customCategory?: string;
-  notifications?: {
-    enabled: boolean;
-    reminderTime: number; // minutes before event
-    emailSent?: boolean;
-  };
+  reminderTime: number; // minutes before event
 }
 
 const eventTypes: Record<string, { label: string; color: string }> = {
@@ -51,6 +45,7 @@ export default function Calendar() {
   const [showEventDetailModal, setShowEventDetailModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
+  const [isAdmin, setIsAdmin] = useState(false);
   const [newEvent, setNewEvent] = useState({
     title: '',
     date: '',
@@ -58,84 +53,114 @@ export default function Calendar() {
     type: 'meeting' as Event['type'],
     urgency: 'medium' as Event['urgency'],
     description: '',
-    customCategory: '',
     notifications: {
-      enabled: false,
       reminderTime: 60
     }
   });
 
-  // Sample events - in a real app, these would come from the database
+  // Check if user is admin
   useEffect(() => {
-    const sampleEvents: Event[] = [
-      {
-        id: '1',
-        title: 'TSA Regional Conference',
-        date: '2024-12-15',
-        time: '10:00',
-        type: 'conference',
-        urgency: 'high',
-        description: 'Annual regional TSA conference with competitions and workshops. This is a major event where teams from different schools compete in various STEM categories including robotics, web design, and engineering challenges.',
-        notifications: {
-          enabled: true,
-          reminderTime: 10080, // 1 week before
-          emailSent: false
+    const checkAdminStatus = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profiles, error } = await supabase
+            .from('profiles')
+            .select('admin')
+            .eq('id', user.id)
+            .single();
+          
+          if (error) {
+            console.error('Error fetching profile:', error);
+            setIsAdmin(false);
+          } else {
+            setIsAdmin(profiles?.admin === true);
+          }
+        } else {
+          setIsAdmin(false);
         }
-      },
-      {
-        id: '2',
-        title: 'Project Submission Deadline',
-        date: '2024-12-20',
-        time: '17:00',
-        type: 'due_date',
-        urgency: 'high',
-        description: 'Final deadline for all competition project submissions. Make sure all documentation, code, and presentation materials are submitted by this date. Late submissions will not be accepted.',
-        notifications: {
-          enabled: true,
-          reminderTime: 1440, // 1 day before
-          emailSent: false
-        }
-      },
-      {
-        id: '3',
-        title: 'Weekly Club Meeting',
-        date: '2024-12-10',
-        time: '18:00',
-        type: 'meeting',
-        urgency: 'medium',
-        description: 'Regular weekly TSA club meeting where we discuss upcoming events, project progress, and team coordination. All members are encouraged to attend and share updates.',
-        notifications: {
-          enabled: true,
-          reminderTime: 30, // 30 minutes before
-          emailSent: false
-        }
-      },
-      {
-        id: '4',
-        title: 'STEM Workshop',
-        date: '2024-12-25',
-        time: '14:00',
-        type: 'workshop',
-        urgency: 'low',
-        description: 'Hands-on STEM workshop for members focusing on advanced programming concepts and robotics engineering. This workshop will help prepare teams for upcoming competitions.',
-        notifications: {
-          enabled: false,
-          reminderTime: 60,
-          emailSent: false
-        }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        setIsAdmin(false);
       }
-    ];
-    setEvents(sampleEvents);
+    };
 
-    // Check if there's an event ID in the URL (from dashboard)
-    const eventId = searchParams.get('event');
-    if (eventId) {
-      const event = sampleEvents.find(e => e.id === eventId);
-      if (event) {
-        setSelectedEvent(event);
-        setShowEventDetailModal(true);
+    checkAdminStatus();
+  }, []);
+
+  // Load events from database
+  const loadEvents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('calendar')
+        .select('*')
+        .order('date', { ascending: true });
+
+      if (error) {
+        console.error('Error loading events:', error);
+        return;
       }
+
+      console.log('Raw data from Supabase:', data);
+      
+      // Transform database data to Event objects
+      const loadedEvents: Event[] = data.map(item => ({
+        id: item.id,
+        event: item.event,
+        date: item.date,
+        type: item.type,
+        urgency: item.urgency,
+        description: item.description,
+        reminderTime: item.reminderTime
+      }));
+
+      console.log('Transformed events:', loadedEvents);
+      
+      // If no events loaded from database, add some sample events for testing
+      if (loadedEvents.length === 0) {
+        console.log('No events found in database, adding sample events for testing');
+        const sampleEvents: Event[] = [
+          {
+            id: '1',
+            event: 'TSA Regional Conference',
+            date: '2024-12-15T10:00:00',
+            type: 'conference',
+            urgency: 'high',
+            description: 'Annual regional TSA conference with competitions and workshops.',
+            reminderTime: 10080
+          },
+          {
+            id: '2',
+            event: 'Project Submission Deadline',
+            date: '2024-12-20T17:00:00',
+            type: 'due_date',
+            urgency: 'high',
+            description: 'Final deadline for all competition project submissions.',
+            reminderTime: 1440
+          }
+        ];
+        setEvents(sampleEvents);
+      } else {
+        setEvents(loadedEvents);
+      }
+
+      // Check if there's an event ID in the URL (from dashboard)
+      const eventId = searchParams.get('event');
+      if (eventId) {
+        const event = loadedEvents.find(e => e.id === eventId);
+        if (event) {
+          setSelectedEvent(event);
+          setShowEventDetailModal(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading events:', error);
     }
+  };
+
+  // Load events when component mounts
+  useEffect(() => {
+    loadEvents();
   }, [searchParams]);
 
   const getDaysInMonth = (date: Date) => {
@@ -161,7 +186,20 @@ export default function Calendar() {
 
   const getEventsForDate = (day: number) => {
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return events.filter(event => event.date === dateStr);
+    console.log(`Looking for events on ${dateStr}, total events: ${events.length}`);
+    
+    const dayEvents = events.filter(event => {
+      // Extract just the date part from the timestamp (YYYY-MM-DD)
+      const eventDate = event.date.split('T')[0];
+      const matches = eventDate === dateStr;
+      if (matches) {
+        console.log(`Found event: ${event.event} on ${eventDate}`);
+      }
+      return matches;
+    });
+    
+    console.log(`Events for ${dateStr}:`, dayEvents);
+    return dayEvents;
   };
 
   const isToday = (day: number) => {
@@ -172,10 +210,11 @@ export default function Calendar() {
   };
 
   const getEventTypeInfo = (event: Event) => {
-    if (event.type === 'custom' && event.customCategory) {
-      return { label: event.customCategory, color: 'from-indigo-500 to-indigo-600' };
+    if (eventTypes[event.type]) {
+      return eventTypes[event.type];
     }
-    return eventTypes[event.type] || eventTypes.meeting;
+    // Default for custom/unknown types
+    return { label: event.type, color: 'from-indigo-500 to-indigo-600' };
   };
 
   const sendNotificationEmail = async (event: Event) => {
@@ -189,59 +228,87 @@ export default function Calendar() {
       // 2. Send the email with event details
       // 3. Update the event to mark email as sent
       
-      console.log(`Sending notification email to ${user.email} for event: ${event.title}`);
+      console.log(`Sending notification email to ${user.email} for event: ${event.event}`);
       
-      // For now, we'll just simulate the email being sent
-      const updatedEvents = events.map(e => 
-        e.id === event.id 
-          ? { 
-              ...e, 
-              notifications: { 
-                ...e.notifications, 
-                emailSent: true 
-              } as Event['notifications']
-            }
-          : e
-      );
-      setEvents(updatedEvents);
+      // Update the event in the database to mark email as sent
+      const { error: updateError } = await supabase
+        .from('calendar')
+        .update({ email_sent: true })
+        .eq('id', event.id);
+
+      if (updateError) {
+        console.error('Error updating email sent status:', updateError);
+      }
+
+      // Update local state - since we don't have notifications object anymore, just log the action
+      console.log(`Email sent for event: ${event.event}`);
       
     } catch (error) {
       console.error('Error sending notification email:', error);
     }
   };
 
-  const handleAddEvent = () => {
+  const handleAddEvent = async () => {
     if (!selectedDate || !newEvent.title) return;
-    const event: Event = {
-      id: Date.now().toString(),
-      title: newEvent.title,
-      date: selectedDate,
-      time: newEvent.time || '12:00',
-      type: newEvent.type,
-      urgency: newEvent.urgency,
-      description: newEvent.description,
-      customCategory: newEvent.customCategory,
-      notifications: newEvent.notifications
-    };
-    setEvents([...events, event]);
-    setShowAddModal(false);
-    setNewEvent({ 
+    
+    try {
+      // Combine date and time into a timestamp
+      const dateTimeString = `${selectedDate}T${newEvent.time || '12:00'}:00`;
+      
+      // Create event object for database
+      const eventData = {
+        event: newEvent.title,
+        date: dateTimeString, // Combined date+time as timestamp
+        type: newEvent.type,
+        urgency: newEvent.urgency,
+        description: newEvent.description || '',
+        reminderTime: newEvent.notifications.reminderTime
+      };
+
+      // Insert event into Supabase calendar table
+      const { data, error } = await supabase
+        .from('calendar')
+        .insert([eventData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding event:', error);
+        return;
+      }
+
+      // Create event object for local state
+      const event: Event = {
+        id: data.id,
+        event: data.event,
+        date: data.date,
+        type: data.type,
+        urgency: data.urgency,
+        description: data.description,
+        reminderTime: data.reminderTime
+      };
+
+      setEvents([...events, event]);
+      setShowAddModal(false);
+          setNewEvent({ 
       title: '', 
       date: '',
       time: '12:00',
       type: 'meeting', 
       urgency: 'medium', 
       description: '', 
-      customCategory: '',
       notifications: {
-        enabled: false,
         reminderTime: 60
       }
     });
-    setSelectedDate('');
+      setSelectedDate('');
+    } catch (error) {
+      console.error('Error adding event:', error);
+    }
   };
 
   const handleDateClick = (day: number) => {
+    if (!isAdmin) return; // Only admins can add events
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     setSelectedDate(dateStr);
     setShowAddModal(true);
@@ -252,29 +319,66 @@ export default function Calendar() {
     setShowEventDetailModal(true);
   };
 
-  const deleteEvent = (eventId: string) => {
-    setEvents(events.filter(event => event.id !== eventId));
-    if (selectedEvent?.id === eventId) {
-      setShowEventDetailModal(false);
-      setSelectedEvent(null);
+  const deleteEvent = async (eventId: string) => {
+    try {
+      // Delete event from Supabase calendar table
+      const { error } = await supabase
+        .from('calendar')
+        .delete()
+        .eq('id', eventId);
+
+      if (error) {
+        console.error('Error deleting event:', error);
+        return;
+      }
+
+      // Update local state
+      setEvents(events.filter(event => event.id !== eventId));
+      if (selectedEvent?.id === eventId) {
+        setShowEventDetailModal(false);
+        setSelectedEvent(null);
+      }
+    } catch (error) {
+      console.error('Error deleting event:', error);
     }
   };
 
-  const updateEventNotifications = (eventId: string, notifications: Event['notifications']) => {
-    const updatedEvents = events.map(event => 
-      event.id === eventId 
-        ? { ...event, notifications }
-        : event
-    );
-    setEvents(updatedEvents);
-    
-    if (selectedEvent?.id === eventId) {
-      setSelectedEvent({ ...selectedEvent, notifications });
+  const updateEventNotifications = async (eventId: string, reminderTime: number) => {
+    try {
+      // Update event reminder time in Supabase calendar table
+      const { error } = await supabase
+        .from('calendar')
+        .update({
+          reminderTime: reminderTime
+        })
+        .eq('id', eventId);
+
+      if (error) {
+        console.error('Error updating event reminder time:', error);
+        return;
+      }
+
+      // Update local state
+      const updatedEvents = events.map(event => 
+        event.id === eventId 
+          ? { ...event, reminderTime }
+          : event
+      );
+      setEvents(updatedEvents);
+      
+      if (selectedEvent?.id === eventId) {
+        setSelectedEvent({ ...selectedEvent, reminderTime });
+      }
+    } catch (error) {
+      console.error('Error updating event reminder time:', error);
     }
   };
 
   const days = getDaysInMonth(currentDate);
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  
+  // Debug: Log current events state
+  console.log('Current events state:', events);
 
   return (
     <div className="min-h-screen bg-[#0a101f] text-white">
@@ -292,13 +396,15 @@ export default function Calendar() {
               <h1 className="text-3xl font-bold mb-2">TSA Calendar</h1>
               <p className="text-gray-400">Stay organized with all your TSA events and deadlines</p>
             </div>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition flex items-center gap-2"
-            >
-              <PlusIcon className="w-5 h-5" />
-              Add Event
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition flex items-center gap-2"
+              >
+                <PlusIcon className="w-5 h-5" />
+                Add Event
+              </button>
+            )}
           </div>
         </div>
 
@@ -350,8 +456,10 @@ export default function Calendar() {
                     <div
                       key={key}
                       onClick={() => handleDateClick(day)}
-                      className={`h-16 p-1 cursor-pointer transition-all hover:bg-[#232a3a] rounded-lg relative group ${
-                        isCurrentDay ? 'ring-2 ring-blue-500' : ''
+                      className={`h-16 p-1 transition-all relative group ${
+                        isAdmin ? 'cursor-pointer hover:bg-[#232a3a] rounded-lg' : ''
+                      } ${
+                        isCurrentDay ? 'ring-2 ring-blue-500 rounded-lg' : ''
                       }`}
                     >
                       <div className={`text-sm font-medium mb-1 ${
@@ -370,10 +478,10 @@ export default function Calendar() {
                               className={`w-2 h-2 rounded-full bg-gradient-to-r ${eventTypeInfo.color} ${
                                 urgencyColors[event.urgency]
                               } border-2 relative`}
-                              title={`${event.title} (${eventTypeInfo.label})`}
+                              title={`${event.event} (${eventTypeInfo.label})`}
                             >
-                              {/* Notification indicator */}
-                              {event.notifications?.enabled && (
+                              {/* Reminder indicator */}
+                              {event.reminderTime > 0 && (
                                 <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-yellow-400 rounded-full" />
                               )}
                             </div>
@@ -394,8 +502,8 @@ export default function Calendar() {
                             const eventTypeInfo = getEventTypeInfo(event);
                             return (
                               <div key={event.id} className="text-xs text-gray-300">
-                                • {event.title} ({eventTypeInfo.label})
-                                {event.notifications?.enabled && (
+                                • {event.event} ({eventTypeInfo.label})
+                                {event.reminderTime > 0 && (
                                   <span className="text-yellow-400 ml-1">🔔</span>
                                 )}
                               </div>
@@ -445,6 +553,8 @@ export default function Calendar() {
                   <span className="text-sm">Email notifications enabled</span>
                 </div>
               </div>
+
+
             </div>
           </div>
         </div>
@@ -466,7 +576,9 @@ export default function Calendar() {
                     <th className="text-left p-3 text-gray-400 font-medium">Urgency</th>
                     <th className="text-left p-3 text-gray-400 font-medium">Notifications</th>
                     <th className="text-left p-3 text-gray-400 font-medium">Description</th>
-                    <th className="text-left p-3 text-gray-400 font-medium">Actions</th>
+                    {isAdmin && (
+                      <th className="text-left p-3 text-gray-400 font-medium">Actions</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -474,16 +586,18 @@ export default function Calendar() {
                     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                     .map(event => {
                       const eventTypeInfo = getEventTypeInfo(event);
-                      const notificationOption = notificationOptions.find(opt => opt.value === event.notifications?.reminderTime);
+                      const notificationOption = notificationOptions.find(opt => opt.value === event.reminderTime);
                       return (
                         <tr 
                           key={event.id} 
-                          className="border-b border-[#232a3a] hover:bg-[#232a3a]/50 transition cursor-pointer"
-                          onClick={() => handleEventClick(event)}
+                          className={`border-b border-[#232a3a] transition ${
+                            isAdmin ? 'hover:bg-[#232a3a]/50 cursor-pointer' : ''
+                          }`}
+                          onClick={() => isAdmin && handleEventClick(event)}
                         >
                           <td className="p-3">
                             <div className="text-sm font-medium">
-                              {new Date(event.date + 'T' + (event.time || '12:00')).toLocaleString('en-US', { 
+                              {new Date(event.date).toLocaleString('en-US', { 
                                 month: 'short', 
                                 day: 'numeric',
                                 year: 'numeric',
@@ -494,7 +608,7 @@ export default function Calendar() {
                             </div>
                           </td>
                           <td className="p-3">
-                            <div className="font-medium">{event.title}</div>
+                            <div className="font-medium">{event.event}</div>
                           </td>
                           <td className="p-3">
                             <span className={`px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${eventTypeInfo.color}`}>
@@ -508,7 +622,7 @@ export default function Calendar() {
                           </td>
                           <td className="p-3">
                             <div className="flex items-center gap-2">
-                              {event.notifications?.enabled ? (
+                              {event.reminderTime > 0 ? (
                                 <>
                                   <BellIcon className="w-4 h-4 text-yellow-400" />
                                   <span className="text-xs text-gray-300">
@@ -525,17 +639,19 @@ export default function Calendar() {
                               {event.description || 'No description'}
                             </div>
                           </td>
-                          <td className="p-3">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteEvent(event.id);
-                              }}
-                              className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 transition text-red-400"
-                            >
-                              <XMarkIcon className="w-4 h-4" />
-                            </button>
-                          </td>
+                          {isAdmin && (
+                            <td className="p-3">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteEvent(event.id);
+                                }}
+                                className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 transition text-red-400"
+                              >
+                                <XMarkIcon className="w-4 h-4" />
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
@@ -546,8 +662,8 @@ export default function Calendar() {
         </div>
       </div>
 
-      {/* Add Event Modal */}
-      {showAddModal && (
+      {/* Add Event Modal - Only show for admins */}
+      {showAddModal && isAdmin && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div
             className="bg-[#181e29] rounded-2xl p-6 shadow-lg border border-[#232a3a] w-full max-w-sm relative max-h-[90vh] overflow-y-auto"
@@ -598,25 +714,30 @@ export default function Calendar() {
               <div>
                 <label className="block text-sm font-medium mb-1">Event Type</label>
                 <select
-                  value={newEvent.type}
-                  onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value as Event['type'] })}
+                  value={newEvent.type in eventTypes ? newEvent.type : 'custom'}
+                  onChange={e => {
+                    if (e.target.value === 'custom') {
+                      setNewEvent({ ...newEvent, type: '' });
+                    } else {
+                      setNewEvent({ ...newEvent, type: e.target.value });
+                    }
+                  }}
                   className="w-full p-2 rounded-lg bg-[#232a3a] border border-[#3a4151] focus:border-blue-500 focus:outline-none text-sm"
                 >
                   {Object.entries(eventTypes).map(([key, value]) => (
                     <option key={key} value={key}>{value.label}</option>
                   ))}
-                  <option value="custom">Custom Category</option>
+                  <option value="custom">Custom</option>
                 </select>
               </div>
-
-              {newEvent.type === 'custom' && (
+              {!(newEvent.type in eventTypes) && (
                 <div>
-                  <label className="block text-sm font-medium mb-1">Custom Category Name</label>
+                  <label className="block text-sm font-medium mb-1">Custom Event Type</label>
                   <input
                     type="text"
-                    value={newEvent.customCategory}
-                    onChange={(e) => setNewEvent({ ...newEvent, customCategory: e.target.value })}
-                    placeholder="Enter custom category name"
+                    value={newEvent.type}
+                    onChange={e => setNewEvent({ ...newEvent, type: e.target.value })}
+                    placeholder="Enter custom event type"
                     className="w-full p-2 rounded-lg bg-[#232a3a] border border-[#3a4151] focus:border-blue-500 focus:outline-none text-sm"
                   />
                 </div>
@@ -646,52 +767,32 @@ export default function Calendar() {
                 />
               </div>
 
-              {/* Notification Settings */}
+              {/* Reminder Settings */}
               <div className="border-t border-[#232a3a] pt-3">
                 <div className="flex items-center gap-2 mb-2">
                   <BellIcon className="w-4 h-4 text-yellow-400" />
-                  <label className="text-sm font-medium">Email Notifications</label>
+                  <label className="text-sm font-medium">Reminder Settings</label>
                 </div>
                 
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={newEvent.notifications.enabled}
-                      onChange={(e) => setNewEvent({
-                        ...newEvent,
-                        notifications: {
-                          ...newEvent.notifications,
-                          enabled: e.target.checked
-                        }
-                      })}
-                      className="rounded border-[#3a4151] bg-[#232a3a] text-blue-500 focus:ring-blue-500"
-                    />
-                    <span className="text-sm">Enable email reminders</span>
-                  </label>
-
-                  {newEvent.notifications.enabled && (
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Reminder Time</label>
-                      <select
-                        value={newEvent.notifications.reminderTime}
-                        onChange={(e) => setNewEvent({
-                          ...newEvent,
-                          notifications: {
-                            ...newEvent.notifications,
-                            reminderTime: parseInt(e.target.value)
-                          }
-                        })}
-                        className="w-full p-2 rounded-lg bg-[#232a3a] border border-[#3a4151] focus:border-blue-500 focus:outline-none text-sm"
-                      >
-                        {notificationOptions.map(option => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
+                <div>
+                  <label className="block text-sm font-medium mb-1">Reminder Time</label>
+                  <select
+                    value={newEvent.notifications.reminderTime}
+                    onChange={(e) => setNewEvent({
+                      ...newEvent,
+                      notifications: {
+                        ...newEvent.notifications,
+                        reminderTime: parseInt(e.target.value)
+                      }
+                    })}
+                    className="w-full p-2 rounded-lg bg-[#232a3a] border border-[#3a4151] focus:border-blue-500 focus:outline-none text-sm"
+                  >
+                    {notificationOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -704,7 +805,7 @@ export default function Calendar() {
                 </button>
                 <button
                   onClick={handleAddEvent}
-                  disabled={!selectedDate || !newEvent.title || (newEvent.type === 'custom' && !newEvent.customCategory)}
+                  disabled={!selectedDate || !newEvent.title}
                   className="flex-1 px-3 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold hover:from-blue-600 hover:to-violet-600 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                 >
                   Add Event
@@ -715,8 +816,8 @@ export default function Calendar() {
         </div>
       )}
 
-      {/* Event Detail Modal */}
-      {showEventDetailModal && selectedEvent && (
+      {/* Event Detail Modal - Only show for admins */}
+      {showEventDetailModal && selectedEvent && isAdmin && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div
             className="bg-[#181e29] rounded-2xl p-6 shadow-lg border border-[#232a3a] w-full max-w-md relative max-h-[90vh] overflow-y-auto"
@@ -735,13 +836,13 @@ export default function Calendar() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1 text-gray-400">Event Title</label>
-                <div className="text-lg font-semibold">{selectedEvent.title}</div>
+                <div className="text-lg font-semibold">{selectedEvent.event}</div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-1 text-gray-400">Date</label>
                 <div className="text-sm">
-                  {new Date(selectedEvent.date + 'T' + (selectedEvent.time || '12:00')).toLocaleDateString('en-US', { 
+                  {new Date(selectedEvent.date).toLocaleDateString('en-US', { 
                     weekday: 'long',
                     year: 'numeric', 
                     month: 'long', 
@@ -765,62 +866,37 @@ export default function Calendar() {
                 </div>
               </div>
 
-              {/* Notification Settings */}
+              {/* Reminder Settings */}
               <div className="border-t border-[#232a3a] pt-3">
                 <div className="flex items-center gap-2 mb-2">
                   <BellIcon className="w-4 h-4 text-yellow-400" />
-                  <label className="text-sm font-medium text-gray-400">Email Notifications</label>
+                  <label className="text-sm font-medium text-gray-400">Reminder Settings</label>
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedEvent.notifications?.enabled || false}
-                      onChange={(e) => updateEventNotifications(selectedEvent.id, {
-                        enabled: e.target.checked,
-                        reminderTime: selectedEvent.notifications?.reminderTime || 60,
-                        emailSent: selectedEvent.notifications?.emailSent
-                      })}
-                      className="rounded border-[#3a4151] bg-[#232a3a] text-blue-500 focus:ring-blue-500"
-                    />
-                    <span className="text-sm">Enable email reminders</span>
-                  </label>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Reminder Time</label>
+                    <select
+                      value={selectedEvent.reminderTime || 60}
+                      onChange={(e) => updateEventNotifications(selectedEvent.id, parseInt(e.target.value))}
+                      className="w-full p-3 rounded-lg bg-[#232a3a] border border-[#3a4151] focus:border-blue-500 focus:outline-none text-sm"
+                    >
+                      {notificationOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                  {selectedEvent.notifications?.enabled && (
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Reminder Time</label>
-                      <select
-                        value={selectedEvent.notifications.reminderTime || 60}
-                        onChange={(e) => updateEventNotifications(selectedEvent.id, {
-                          enabled: selectedEvent.notifications?.enabled || false,
-                          reminderTime: parseInt(e.target.value),
-                          emailSent: selectedEvent.notifications?.emailSent
-                        })}
-                        className="w-full p-2 rounded-lg bg-[#232a3a] border border-[#3a4151] focus:border-blue-500 focus:outline-none text-sm"
-                      >
-                        {notificationOptions.map(option => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {selectedEvent.notifications?.enabled && (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => sendNotificationEmail(selectedEvent)}
-                        className="px-3 py-1 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 transition text-blue-400 text-xs"
-                      >
-                        Send Test Email
-                      </button>
-                      {selectedEvent.notifications.emailSent && (
-                        <span className="text-xs text-green-400">✓ Email sent</span>
-                      )}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => sendNotificationEmail(selectedEvent)}
+                      className="px-3 py-1 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 transition text-blue-400 text-xs"
+                    >
+                      Send Test Email
+                    </button>
+                  </div>
                 </div>
               </div>
 

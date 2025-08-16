@@ -169,7 +169,7 @@ export default function Officers() {
       </div>
 
       {/* Executive Interns Section */}
-      <div className="w-full max-w-4xl mt-24 text-center">
+      <div className="w-full max-w-4xl mt-24 text-center mb-8">
         <div
           className="bg-[#181e29] border border-[#232a3a] rounded-3xl shadow-lg p-8 flex flex-col items-center"
           style={{
@@ -200,7 +200,7 @@ export default function Officers() {
             responsibilities to help ensure the success of North Creek TSA.
           </p>
 
-          <details className="mt-6 w-full">
+          {/* <details className="mt-6 w-full">
             <summary className="text-sky-400 font-semibold text-lg cursor-pointer hover:underline">
               Interested in supporting?
             </summary>
@@ -215,7 +215,7 @@ export default function Officers() {
               </Link>
               .
             </div>
-          </details>
+          </details> */}
         </div>
       </div>
 
