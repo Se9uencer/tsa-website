@@ -37,10 +37,47 @@ export default function Navbar() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [settings, setSettings] = useState<{ emailNotifications: boolean }>({ emailNotifications: true });
+  // Track loading state for settings
+  const [settingsLoading, setSettingsLoading] = useState(false);
+
+  useEffect(() => {
+    if (user && showSettingsModal) {
+      // Fetch settings from Supabase when modal opens
+      const fetchSettings = async () => {
+        setSettingsLoading(true);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('settings')
+          .eq('id', user.id)
+          .single();
+        if (!error && data && data.settings) {
+          setSettings(data.settings);
+        }
+        setSettingsLoading(false);
+      };
+      fetchSettings();
+    }
+  }, [user, showSettingsModal]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.replace('/signin');
+  };
+
+  const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSettings({ ...settings, [e.target.name]: e.target.checked });
+  };
+
+  const handleSaveSettings = async () => {
+    if (!user) return;
+    setSettingsLoading(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ settings })
+      .eq('id', user.id);
+    setSettingsLoading(false);
+    setShowSettingsModal(false);
   };
 
   return (
@@ -124,21 +161,26 @@ export default function Navbar() {
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
           <div className="bg-[#181e29] rounded-2xl shadow-2xl border border-[#232a3a] p-8 w-full max-w-md relative animate-fade-in">
             <button className="absolute top-4 right-4 text-gray-400 hover:text-white" onClick={() => setShowSettingsModal(false)}>&times;</button>
-            <div className="text-xl font-bold mb-4">Settings</div>
+            <div className="text-xl font-bold mb-4 text-white">Settings</div>
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <span>Email Notifications</span>
-                <input type="checkbox" className="form-checkbox h-5 w-5 text-blue-500 rounded" defaultChecked />
+                <span className="text-white">Email Notifications</span>
+                <input
+                  type="checkbox"
+                  className="form-checkbox h-5 w-5 text-blue-500 rounded"
+                  name="emailNotifications"
+                  checked={settings.emailNotifications}
+                  onChange={handleSettingsChange}
+                  disabled={settingsLoading}
+                />
               </div>
-              <div className="flex items-center justify-between">
-                <span>SMS Updates</span>
-                <input type="checkbox" className="form-checkbox h-5 w-5 text-blue-500 rounded" />
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Dark Mode</span>
-                <input type="checkbox" className="form-checkbox h-5 w-5 text-blue-500 rounded" defaultChecked />
-              </div>
-              <button className="mt-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition" onClick={() => setShowSettingsModal(false)}>Save Changes</button>
+              <button
+                className="mt-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition"
+                onClick={handleSaveSettings}
+                disabled={settingsLoading}
+              >
+                {settingsLoading ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
           </div>
         </div>

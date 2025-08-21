@@ -7,28 +7,6 @@ import { ChevronDownIcon, Bars3Icon, XMarkIcon, UserIcon, Cog6ToothIcon, ArrowRi
 import Logo from '@/components/Logo';
 import { Fragment } from 'react';
 import Link from 'next/link';
-
-const placeholderEvents = [
-  { id: 1, title: 'TSA Regional Conference', date: '2025-07-15', type: 'conference', urgency: 'high', description: 'Annual regional TSA conference with competitions and workshops. This is a major event where teams from different schools compete in various STEM categories.' },
-  { id: 2, title: 'STEM Workshop', date: '2025-08-02', type: 'workshop', urgency: 'medium', description: 'Hands-on STEM workshop focusing on robotics and programming. Learn new skills and work on exciting projects with fellow TSA members.' },
-  { id: 3, title: 'Leadership Training', date: '2025-09-10', type: 'meeting', urgency: 'low', description: 'Leadership development session for current and aspiring TSA officers. Learn about team management, event planning, and effective communication.' },
-];
-
-const placeholderAnnouncements = [
-  { id: 1, title: 'Welcome to TSA!', timestamp: '2024-06-01 09:00', preview: 'We are excited to kick off a new year of events and opportunities.' },
-  { id: 2, title: 'Project Submissions Open', timestamp: '2024-06-05 14:30', preview: 'Submit your projects for the upcoming regional conference.' },
-  { id: 3, title: 'Officer Applications', timestamp: '2024-06-10 11:15', preview: 'Interested in becoming a TSA officer? Applications are now open.' },
-];
-
-const navLinks = [
-  { name: 'About', href: '/about' },
-  { name: 'Officers', href: '/officers' },
-  { name: 'Resources', href: '/resources' },
-  { name: 'Calendar', href: '/calendar' },
-  { name: 'Leaderboard', href: '/leaderboard' },
-  { name: 'FAQ', href: '/faq' },
-];
-
 // Helper to get days in current month
 function getDaysInMonth(year: number, month: number) {
   return Array.from({ length: new Date(year, month + 1, 0).getDate() }, (_, i) => i + 1);
@@ -268,19 +246,14 @@ export default function Dashboard() {
   const year = now.getFullYear();
   const month = now.getMonth();
   const days = getDaysInMonth(year, month);
-  const eventDates = placeholderEvents
-    .filter(e => {
-      const eventDate = new Date(e.date);
-      return eventDate.getFullYear() === year && eventDate.getMonth() === month;
-    })
-    .map(e => new Date(e.date).getDate());
+  // Use upcomingEvents for the timeline
+  const timelineEvents = upcomingEvents.filter(e => {
+    const eventDate = new Date(e.date);
+    return eventDate.getFullYear() === year && eventDate.getMonth() === month;
+  });
+  const eventDates = timelineEvents.map(e => new Date(e.date).getDate());
   const eventMap = Object.fromEntries(
-    placeholderEvents
-      .filter(e => {
-        const eventDate = new Date(e.date);
-        return eventDate.getFullYear() === year && eventDate.getMonth() === month;
-      })
-      .map(e => [new Date(e.date).getDate(), e])
+    timelineEvents.map(e => [new Date(e.date).getDate(), e])
   );
 
   return (
@@ -486,55 +459,58 @@ export default function Dashboard() {
       </div>
 
       {/* Calendar Timeline */}
-      <div className="w-full max-w-5xl mx-auto px-4 mt-2">
+      <div className="w-full max-w-5xl mx-auto px-4 mb-4 mt-2">
         <div
           className="mb-2 text-lg font-semibold text-white px-2"
           style={{ textShadow: '0 0 2px #3b82f6, 0 0 4px #8b5cf6' }}
         >
           {now.toLocaleString('default', { month: 'long', year: 'numeric' })}
         </div>
-        <div
-          ref={calendarRef}
-          className="flex overflow-x-auto gap-2 px-4 py-4 scrollbar-thin scrollbar-thumb-blue-900 scrollbar-track-transparent rounded-2xl relative cursor-pointer mb-10 md:mb-0"
-          style={{ WebkitOverflowScrolling: 'touch', boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}
-          onClick={() => router.push('/calendar')}
-        >
-          {days.map(day => {
-            const isEvent = eventDates.includes(day-1);
-            const event = eventMap[day-1];
-            return (
-              <div
-                key={day}
-                className={`flex flex-col items-center group relative cursor-pointer select-none`}
-                onMouseEnter={e => {
-                  if (isEvent) {
-                    const rect = (e.target as HTMLElement).getBoundingClientRect();
-                    setTooltip({ x: rect.left + rect.width / 2, y: rect.top, event });
-                  }
-                }}
-                onMouseLeave={() => setTooltip(null)}
-                onClick={e => {
-                  e.stopPropagation(); // Prevent triggering the parent onClick
-                  if (isEvent) {
-                    const rect = (e.target as HTMLElement).getBoundingClientRect();
-                    setTooltip({ x: rect.left + rect.width / 2, y: rect.top, event });
-                  }
-                  router.push('/calendar');
-                }}
-              >
+        <div className='px-4 pt-4 pb-2 rounded-2xl'
+        style={{boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}>
+          <div
+            ref={calendarRef}
+            className="flex overflow-x-auto gap-2 scrollbar-thin scrollbar-thumb-blue-900 scrollbar-track-transparent relative cursor-pointer mb-10 md:mb-0"
+            style={{ WebkitOverflowScrolling: 'touch',}}
+            onClick={() => router.push('/calendar')}
+          >
+            {days.map(day => {
+              const isEvent = eventDates.includes(day);
+              const event = eventMap[day];
+              return (
                 <div
-                  className={`w-10 h-10 flex items-center justify-center rounded-full text-lg font-semibold
-                    ${isEvent ? 'bg-gradient-to-br from-blue-500 to-violet-500 text-white shadow-lg' : 'bg-[#232a3a] text-gray-300'}
-                    border border-[#232a3a] transition hover:scale-105`}
+                  key={day}
+                  className={`flex flex-col items-center group relative cursor-pointer select-none`}
+                  onMouseEnter={e => {
+                    if (isEvent) {
+                      const rect = (e.target as HTMLElement).getBoundingClientRect();
+                      setTooltip({ x: rect.left + rect.width / 2, y: rect.top, event });
+                    }
+                  }}
+                  onMouseLeave={() => setTooltip(null)}
+                  onClick={e => {
+                    e.stopPropagation(); // Prevent triggering the parent onClick
+                    if (isEvent) {
+                      const rect = (e.target as HTMLElement).getBoundingClientRect();
+                      setTooltip({ x: rect.left + rect.width / 2, y: rect.top, event });
+                    }
+                    router.push('/calendar');
+                  }}
                 >
-                  {day}
+                  <div
+                    className={`w-10 h-10 flex items-center justify-center rounded-full text-lg font-semibold
+                      ${isEvent ? 'bg-gradient-to-br from-blue-500 to-violet-500 text-white shadow-lg' : 'bg-[#232a3a] text-gray-300'}
+                      border border-[#232a3a] transition hover:scale-105`}
+                  >
+                    {day}
+                  </div>
+                  {isEvent && (
+                    <div className="w-2 h-2 rounded-full bg-blue-400 mt-1" />
+                  )}
                 </div>
-                {isEvent && (
-                  <div className="w-2 h-2 rounded-full bg-blue-400 mt-1" />
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
         {/* Tooltip */}
         {tooltip && (
@@ -543,8 +519,15 @@ export default function Dashboard() {
             style={{ left: tooltip.x, top: tooltip.y - 60, transform: 'translate(-50%, 0)' }}
             onMouseLeave={() => setTooltip(null)}
           >
-            <div className="font-bold mb-1">{tooltip.event.title}</div>
-            <div className="text-xs text-gray-300">{tooltip.event.date}</div>
+            <div className="font-bold mb-1">{tooltip.event.event}</div>
+            <div className="text-xs text-gray-300">{new Date(tooltip.event.date).toLocaleString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            })}</div>
           </div>
         )}
       </div>

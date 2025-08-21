@@ -110,6 +110,25 @@ export default function About() {
         <span className="text-xl md:text-2xl font-bold text-sky-300">{aboutContent.missionStatement}</span>
       </div>
 
+      {/* Socials section Heading */}
+      <h2 className="text-2xl md:text-3xl font-bold text-white mt-20 mb-8 text-center w-full">Our Socials</h2>
+
+      {/* Socials section */}
+      <div className="w-full max-w-5xl mx-auto flex flex-col items-center">
+        <div className="rounded-2xl border border-[#232a3a] bg-[#181e29] w-full max-w-4xl p-8" style={{ boxShadow }}>
+          <div>
+            <span className="text-xl font-bold bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent">Email: </span>
+            <span className="text-xl text-[#c0dbfc]">northcreekhstsa@gmail.com</span>
+          </div>
+
+          <div>
+            <span className="text-xl font-bold bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent">Instagram: </span>
+            <span className="text-xl text-blue-400"><a className="bg-gradient-to-r text-blue-400 hover:text-blue-500 duration-200" href='https://www.instagram.com/northcreektsa/' target="_blank" rel="noopener noreferrer">@northcreektsa</a></span>
+          </div>
+        </div>
+
+      </div>
+
       {/* Timeline Heading */}
       <h2 className="text-2xl md:text-3xl font-bold text-white mt-20 mb-8 text-center w-full">North Creek TSA's Timeline</h2>
 

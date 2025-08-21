@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Logo from '@/components/Logo';
 import { supabase } from '@/lib/supabaseClient';
 import AuthLayout from '@/components/AuthLayout';
+import { FaRegEye, FaRegEyeSlash } from 'react-icons/fa';
 
 export default function SignUp() {
   const router = useRouter();
@@ -15,6 +16,8 @@ export default function SignUp() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -63,22 +66,80 @@ export default function SignUp() {
             <div>
               <label htmlFor="name" className="block text-white text-lg font-medium mb-2">Full Name</label>
               <input id="name" type="text" value={name} onChange={e => setName(e.target.value)} required disabled={loading}
-                className="w-full px-5 py-4 rounded-xl bg-[#181e29] border border-[#232a3a] text-white text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                className="w-full px-5 py-4 rounded-xl bg-[#181e29] border-2 border-[#232a3a] text-white text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
             </div>
             <div>
               <label htmlFor="email" className="block text-white text-lg font-medium mb-2">Email address</label>
               <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required disabled={loading}
-                className="w-full px-5 py-4 rounded-xl bg-[#181e29] border border-[#232a3a] text-white text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                className="w-full px-5 py-4 rounded-xl bg-[#181e29] border-2 border-[#232a3a] text-white text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
             </div>
-            <div>
-              <label htmlFor="password" className="block text-white text-lg font-medium mb-2">Password</label>
-              <input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required disabled={loading}
-                className="w-full px-5 py-4 rounded-xl bg-[#181e29] border border-[#232a3a] text-white text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
-            </div>
-            <div>
-              <label htmlFor="confirmPassword" className="block text-white text-lg font-medium mb-2">Confirm Password</label>
-              <input id="confirmPassword" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required disabled={loading}
-                className="w-full px-5 py-4 rounded-xl bg-[#181e29] border border-[#232a3a] text-white text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+              <div className="relative">
+                <label
+                  htmlFor="password"
+                  className="block text-white text-lg font-medium mb-2"
+                >
+                  Password
+                </label>
+
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                    className="w-full px-5 py-4 rounded-xl bg-[#181e29] border-2 border-[#232a3a] text-white text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition pr-12"
+                  />
+
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    className="absolute top-1/2 right-5 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors duration-200 cursor-pointer"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <FaRegEyeSlash className="h-5 w-5" />
+                    ) : (
+                      <FaRegEye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            <div className="relative">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-white text-lg font-medium mb-2"
+              >
+                Confirm Password
+              </label>
+
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                  className="w-full px-5 py-4 rounded-xl bg-[#181e29] border-2 border-[#232a3a] text-white text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition pr-12"
+                />
+
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className="absolute top-1/2 right-5 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors duration-200 cursor-pointer"
+                  onClick={() => setShowConfirmPassword((v) => !v)}
+                  aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                >
+                  {showConfirmPassword ? (
+                    <FaRegEyeSlash className="h-5 w-5" />
+                  ) : (
+                    <FaRegEye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
           <div className="flex flex-col gap-6">
@@ -93,4 +154,4 @@ export default function SignUp() {
       </div>
     </AuthLayout>
   );
-} 
+}

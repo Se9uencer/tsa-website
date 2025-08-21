@@ -111,12 +111,13 @@ export default function Officers() {
         Meet the North Creek TSA Board!
       </h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 w-full max-w-6xl">
+      {/* Officers Cards */}
+      <div className="flex flex-wrap justify-center gap-10 w-full max-w-6xl">
         {officersLoading
           ? Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="flex flex-col md:flex-row bg-[#181e29] border rounded-3xl shadow-xl overflow-hidden p-6 gap-6 items-center border-[#232a3a] h-72"
+                className="flex flex-col md:flex-row bg-[#181e29] border rounded-3xl shadow-xl overflow-hidden p-6 gap-6 items-center border-[#232a3a] h-72 w-full md:w-[48%] lg:w-[32%] max-w-md"
                 style={{
                   boxShadow:
                     "0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a",
@@ -130,7 +131,7 @@ export default function Officers() {
           : officers.map((officer, i) => (
               <div
                 key={i}
-                className="flex flex-col md:flex-row bg-[#181e29] border rounded-3xl shadow-xl overflow-hidden p-6 gap-6 items-center border-[#232a3a] h-72"
+                className="flex flex-col md:flex-row bg-[#181e29] border rounded-3xl shadow-xl overflow-hidden p-6 gap-6 items-center border-[#232a3a] h-72 md:w-[45%]"
                 style={{
                   boxShadow:
                     "0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a",
@@ -223,7 +224,7 @@ export default function Officers() {
       {modalIndex !== null && officers[modalIndex] && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <div
-            className="bg-[#181e29] border rounded-3xl shadow-2xl p-8 max-w-lg w-full relative animate-fade-in border-[#232a3a] max-h-[90vh] overflow-y-auto"
+            className="bg-[#181e29] border rounded-3xl shadow-2xl p-8 max-w-lg w-full relative animate-fade-in border-[#232a3a] max-h-[90vh] overflow-y-auto custom-scrollbar"
             style={{
               boxShadow:
                 "0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a",

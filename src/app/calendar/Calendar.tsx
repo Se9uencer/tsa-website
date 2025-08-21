@@ -4,6 +4,7 @@ import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, XMarkIcon, BellIcon } from
 import { supabase } from '@/lib/supabaseClient';
 import { useSearchParams } from 'next/navigation';
 
+
 interface Event {
   id: string;
   event: string;

@@ -275,7 +275,7 @@ export default function Leaderboard() {
             ))}
           </div>
 
-          <div className="overflow-x-auto max-h-[400px] overflow-y-auto rounded-lg border border-[#232a3a] bg-[#232a3a]/20">
+          <div className="overflow-x-auto max-h-[400px] overflow-y-auto custom-scrollbar rounded-lg border border-[#232a3a] bg-[#232a3a]/20">
             <table className="min-w-full text-white text-lg">
               <thead>
                 <tr className="border-b border-[#232a3a] sticky top-0 bg-[#181e29]">
