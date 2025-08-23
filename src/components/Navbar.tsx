@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
@@ -9,6 +9,7 @@ import type { User } from '@supabase/supabase-js';
 
 const navLinks = [
   { name: 'About', href: '/about' },
+  { name: 'Register', href: '/register' }, // Added Register as second link
   { name: 'Officers', href: '/officers' },
   { name: 'Resources', href: '/resources' },
   { name: 'Calendar', href: '/calendar' },
@@ -40,6 +41,33 @@ export default function Navbar() {
   const [settings, setSettings] = useState<{ emailNotifications: boolean }>({ emailNotifications: true });
   // Track loading state for settings
   const [settingsLoading, setSettingsLoading] = useState(false);
+  const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
+  const [visibleLinksCount, setVisibleLinksCount] = useState(navLinks.length);
+  const navLinksRef = useRef<HTMLDivElement>(null);
+  const navContainerRef = useRef<HTMLDivElement>(null);
+  const logoRef = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (!navLinksRef.current || !navContainerRef.current || !logoRef.current) return;
+      const navLinksChildren = Array.from(navLinksRef.current.children) as HTMLElement[];
+      let totalWidth = 0;
+      // Dynamically measure logo/text width
+      const logoWidth = logoRef.current.offsetWidth;
+      // 32px for right profile area gap, 32px for left/right padding, 32px for possible scrollbar, 16px buffer
+      let maxWidth = navContainerRef.current.offsetWidth - logoWidth - 32 - 32 - 32 - 16;
+      let count = 0;
+      for (let i = 0; i < navLinksChildren.length; i++) {
+        totalWidth += navLinksChildren[i].offsetWidth + 24; // 24px gap
+        if (totalWidth > maxWidth) break;
+        count++;
+      }
+      setVisibleLinksCount(count);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (user && showSettingsModal) {
@@ -83,23 +111,50 @@ export default function Navbar() {
   return (
     <>
       <nav className="fixed top-0 left-0 w-full z-30 bg-[#181e29] border-b border-[#232a3a] shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 flex items-center justify-between h-16">
+        <div ref={navContainerRef} className="max-w-7xl mx-auto px-4 sm:px-8 flex items-center justify-between h-16">
           {/* Left: Logo/Text */}
-          <Link href="/dashboard" className="flex items-center group">
+          <Link ref={logoRef} href="/dashboard" className="flex items-center group">
             <Logo className="w-20 h-20 text-blue-500 group-hover:opacity-80 transition" />
             <span className="font-bold text-lg text-white tracking-wide group-hover:text-blue-400 transition">Portal</span>
           </Link>
           {/* Center: Nav Links (hidden on mobile) */}
-          <div className="hidden md:flex gap-6">
-            {navLinks.map(link => (
+          <div ref={navLinksRef} className="hidden md:flex gap-6 h-full items-center">
+            {navLinks.slice(0, visibleLinksCount).map(link => (
               <Link
                 key={link.name}
                 href={link.href}
-                className={`font-medium transition ${pathname === link.href ? 'text-blue-400' : 'text-white hover:text-blue-400'}`}
+                className={`font-medium transition flex items-center h-full ${pathname === link.href ? 'text-blue-400' : 'text-white hover:text-blue-400'}`}
+                style={{ height: '100%' }}
               >
                 {link.name}
               </Link>
             ))}
+            {visibleLinksCount < navLinks.length && (
+              <div className="relative h-full flex items-center">
+                <button
+                  className="font-medium text-white hover:text-blue-400 transition flex items-center gap-1 px-2 py-1 rounded h-full"
+                  onClick={() => setMoreDropdownOpen((open) => !open)}
+                  type="button"
+                  style={{ height: '100%' }}
+                >
+                  More <ChevronDownIcon className="w-4 h-4 text-blue-400" />
+                </button>
+                <div className={`absolute right-0 top-full mt-2 w-40 bg-[#23232a] border border-[#232a3a] rounded-xl shadow-2xl z-20 transition-all duration-200 ${moreDropdownOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
+                  style={{ minWidth: '10rem' }}
+                >
+                  {navLinks.slice(visibleLinksCount).map(link => (
+                    <Link
+                      key={link.name}
+                      href={link.href}
+                      className="block px-4 py-2 text-white hover:bg-blue-900/30 transition"
+                      onClick={() => setMoreDropdownOpen(false)}
+                    >
+                      {link.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           {/* Right: Profile Dropdown (dummy for now) */}
           <div className="flex items-center gap-2">

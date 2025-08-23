@@ -56,7 +56,7 @@ export default function Resources() {
   // Fetch resource links for all events on mount
   useEffect(() => {
     const fetchResourceLinks = async () => {
-      const eventNames = userEvents.map(e => e.name);
+      const eventNames = userEvents;
       const { data, error } = await supabase
         .from('resourcesDriveIDs')
         .select('*')
@@ -99,16 +99,16 @@ export default function Resources() {
   // Handle showing state for smooth unmount
   useEffect(() => {
     (userEvents || []).forEach(event => {
-      if (expanded === event.id) {
+      if (expanded === event) {
         // If expanding, show immediately
-        setShowing(prev => ({ ...prev, [event.id]: true }));
-        if (timeoutRef.current[event.id]) {
-          clearTimeout(timeoutRef.current[event.id]);
+        setShowing(prev => ({ ...prev, [event]: true }));
+        if (timeoutRef.current[event]) {
+          clearTimeout(timeoutRef.current[event]);
         }
-      } else if (showing[event.id]) {
+      } else if (showing[event]) {
         // If collapsing, delay hiding
-        timeoutRef.current[event.id] = setTimeout(() => {
-          setShowing(prev => ({ ...prev, [event.id]: false }));
+        timeoutRef.current[event] = setTimeout(() => {
+          setShowing(prev => ({ ...prev, [event]: false }));
         }, 500); // match transition duration
       }
     });
@@ -131,24 +131,24 @@ export default function Resources() {
                 <span className="text-gray-400 italic">You aren't registered in any events.</span>
               ) : (
                 userEvents.map(event => (
-                  <div key={event.id}>
+                  <div key={event}>
                     <button
                       className="text-xl font-bold text-blue-400 hover:text-blue-500 hover:cursor-pointer flex w-full text-left focus:outline-none"
-                      onClick={() => setExpanded(expanded === event.id ? null : event.id)}
+                      onClick={() => setExpanded(expanded === event ? null : event)}
                     >
                       <span
-                        className={`ml-2 mr-2 text-lg transition-transform duration-300 h-full ${expanded === event.id ? 'rotate-90' : 'rotate-0'}`}
+                        className={`ml-2 mr-2 text-lg transition-transform duration-300 h-full ${expanded === event ? 'rotate-90' : 'rotate-0'}`}
                         style={{ display: 'inline-block' }}
                       >
                         {">"}
                       </span>
-                      {event.name}
+                      {event}
                     </button>
-                    <div className={`transition-all duration-500 ease-in-out overflow-hidden rollout ${expanded === event.id ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'}`}>
-                      {showing[event.id] && (
+                    <div className={`transition-all duration-500 ease-in-out overflow-hidden rollout ${expanded === event ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'}`}>
+                      {showing[event] && (
                         <div className="mt-3 mb-2 flex flex-col gap-2">
-                          {resourceLinks[event.name] &&
-                            Object.entries(resourceLinks[event.name]).map(([col, val]) => (
+                          {resourceLinks[event] &&
+                            Object.entries(resourceLinks[event]).map(([col, val]) => (
                               <a
                                 key={col}
                                 href={`https://drive.google.com/${val}`}
@@ -162,7 +162,7 @@ export default function Resources() {
                               </a>
                             ))
                           }
-                          {!resourceLinks[event.name] && (
+                          {!resourceLinks[event] && (
                             <span className="text-gray-400 italic">No resources available.</span>
                           )}
                         </div>

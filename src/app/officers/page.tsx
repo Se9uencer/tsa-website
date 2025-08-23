@@ -7,14 +7,19 @@ import { supabase } from "@/lib/supabaseClient";
 
 function getBioWithReadMore(bio: string, onClick: () => void) {
   return (
-    <div className="mt-4 text-base text-white font-normal">
-      <div className="line-clamp-3 overflow-hidden">{bio}</div>
-      <div>
+    <div className="mt-4 text-base text-white font-normal w-full">
+      {/* Hide bio preview on mobile, show on sm+ */}
+      <div className="hidden sm:block">
+        <div className="line-clamp-3 overflow-hidden text-ellipsis">{bio}</div>
+      </div>
+      <div className="mt-1 w-full flex justify-center sm:justify-start">
+        {/* Show 'Read Bio' on mobile, 'Read more' on sm+ */}
         <span
-          className="text-sky-400 font-semibold italic cursor-pointer"
+          className="text-sky-400 font-semibold italic cursor-pointer block text-center sm:text-left"
           onClick={onClick}
         >
-          Read more &gt;
+          <span className="block sm:hidden">Read Bio &gt;</span>
+          <span className="hidden sm:inline">Read more &gt;</span>
         </span>
       </div>
     </div>
@@ -131,13 +136,13 @@ export default function Officers() {
           : officers.map((officer, i) => (
               <div
                 key={i}
-                className="flex flex-col md:flex-row bg-[#181e29] border rounded-3xl shadow-xl overflow-hidden p-6 gap-6 items-center border-[#232a3a] h-72 md:w-[45%]"
+                className="flex flex-col md:flex-row bg-[#181e29] border rounded-3xl shadow-xl overflow-hidden p-6 gap-6 items-center border-[#232a3a] h-72 w-full max-w-xs sm:max-w-md min-w-0 min-h-[340px] sm:min-h-[288px] mx-auto"
                 style={{
                   boxShadow:
                     "0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a",
                 }}
               >
-                <div className="w-40 h-40 bg-[#232a3a] rounded-2xl border border-[#232a3a]/50 flex items-center justify-center">
+                <div className="w-40 h-40 bg-[#232a3a] rounded-2xl border border-[#232a3a]/50 flex items-center justify-center min-w-0 flex-shrink-0">
                   {officer.imageLoading ? (
                     <div className="text-gray-400">Loading...</div>
                   ) : (
@@ -150,20 +155,23 @@ export default function Officers() {
                     />
                   )}
                 </div>
-                <div className="flex-1 flex flex-col justify-center">
-                  <div className="text-2xl font-bold text-white">
+                <div className="flex-1 flex flex-col justify-center min-w-0 w-full">
+                  <div className="text-2xl font-bold text-white truncate">
                     {officer.name}
                   </div>
-                  <div className="text-lg font-semibold mt-1 bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent">
+                  <div className="text-lg font-semibold mt-1 bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent truncate">
                     {officer.position}
                   </div>
-                  <div className="mt-4 text-lg font-medium text-white">
+                  <div className="mt-4 text-lg font-medium text-white truncate">
                     Favorite Event:{" "}
-                    <span className="bg-gradient-to-r from-sky-500 to-blue-500 bg-clip-text text-transparent">
+                    <span className="bg-gradient-to-r from-sky-500 to-blue-500 bg-clip-text text-transparent truncate">
                       {officer.favoriteEvent}
                     </span>
                   </div>
-                  {getBioWithReadMore(officer.bio, () => setModalIndex(i))}
+                  {/* Always show the Read Bio button, even on mobile */}
+                  <div className="flex-1 flex flex-col justify-end">
+                    {getBioWithReadMore(officer.bio, () => setModalIndex(i))}
+                  </div>
                 </div>
               </div>
             ))}

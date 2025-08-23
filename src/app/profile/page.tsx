@@ -79,7 +79,7 @@ export default function Profile() {
     const fetchEventResources = async () => {
       if (!userEvents || userEvents.length === 0) return;
       setResourcesLoading(true);
-      const eventNames = userEvents.map(e => e.name);
+      const eventNames = userEvents
       const { data, error } = await supabase
         .from('resourcesDriveIDs')
         .select('Name, "Full Folder", Rubric')
@@ -334,16 +334,16 @@ const calculateXPProgress = (xp: number) => {
                 ) : userEvents.length === 0 ? (
                   <div className="text-gray-400 italic">You aren't registered in any events.</div>
                 ) : (
-                  userEvents.slice(0, 4).map((event, idx) => (
-                    <div key={event.id || idx}>
-                      <div className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent">{event.name}</div>
+                  userEvents.slice(0, 3).map((event) => (
+                    <div key={event}>
+                      <div className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent">{event}</div>
                       <div className="flex gap-4 mt-1">
                         {resourcesLoading ? (
                           <span className="text-gray-400 text-lg">Loading resources...</span>
                         ) : (
                           <>
-                            <a href={eventResourceLinks[event.name]?.rubricUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Rubric <span className="text-blue-400">↗</span></a>
-                            <a href={eventResourceLinks[event.name]?.resourcesUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Resources <span className="text-blue-400">↗</span></a>
+                            <a href={eventResourceLinks[event]?.rubricUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Rubric <span className="text-blue-400">↗</span></a>
+                            <a href={eventResourceLinks[event]?.resourcesUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Resources <span className="text-blue-400">↗</span></a>
                           </>
                         )}
                       </div>
@@ -369,7 +369,7 @@ const calculateXPProgress = (xp: number) => {
       {/* Events Modal */}
       {showEventsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-fade-in">
-          <div className="bg-[#181e29] rounded-2xl shadow-2xl border border-[#232a3a] p-8 w-full max-w-2xl max-h-[80vh] overflow-y-auto relative">
+          <div className="bg-[#181e29] rounded-2xl shadow-2xl border border-[#232a3a] p-8 w-full max-w-2xl max-h-[80vh] overflow-y-auto relative custom-scrollbar">
             <button
               className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold focus:outline-none"
               onClick={() => setShowEventsModal(false)}
@@ -386,14 +386,14 @@ const calculateXPProgress = (xp: number) => {
               ) : (
                 userEvents.map((event, idx) => (
                   <div key={event.id || idx} className="bg-[#232a3a] rounded-xl p-4">
-                    <div className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent">{event.name}</div>
+                    <div className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent">{event}</div>
                     <div className="flex gap-4 mt-1">
                       {resourcesLoading ? (
                         <span className="text-gray-400 text-lg">Loading resources...</span>
                       ) : (
                         <>
-                          <a href={eventResourceLinks[event.name]?.rubricUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Rubric <span className="text-blue-400">↗</span></a>
-                          <a href={eventResourceLinks[event.name]?.resourcesUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Resources <span className="text-blue-400">↗</span></a>
+                          <a href={eventResourceLinks[event]?.rubricUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Rubric <span className="text-blue-400">↗</span></a>
+                          <a href={eventResourceLinks[event]?.resourcesUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline flex items-center gap-1 text-lg">Resources <span className="text-blue-400">↗</span></a>
                         </>
                       )}
                     </div>

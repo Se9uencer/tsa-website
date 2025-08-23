@@ -12,34 +12,12 @@ function getDaysInMonth(year: number, month: number) {
   return Array.from({ length: new Date(year, month + 1, 0).getDate() }, (_, i) => i + 1);
 }
 
-function RegisterEventsPopup({ open, onClose, availableEvents, onRegister, loading }: {
-  open: boolean,
-  onClose: () => void,
-  availableEvents: any[],
-  onRegister: (selected: any[]) => void,
-  loading: boolean
-}) {
-  const [selectedEvents, setSelectedEvents] = useState<any[]>([]);
-  const [addEvent, setAddEvent] = useState('');
-
-  const handleAdd = () => {
-    if (addEvent && !selectedEvents.includes(addEvent)) {
-      setSelectedEvents([...selectedEvents, addEvent]);
-      setAddEvent('');
-    }
-  };
-  const handleRemove = (event: string) => {
-    setSelectedEvents(selectedEvents.filter(e => e !== event));
-  };
-  const handleRegister = () => {
-    if (selectedEvents.length > 0) {
-      onRegister(selectedEvents);
-    }
-  };
+// New: Simple RegisterPopup for registration guidance
+function RegisterPopup({ open, message, registrationType, onClose }: { open: boolean, message: string, registrationType: string, onClose: () => void }) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-fade-in">
-      <div className="bg-[#181e29] rounded-2xl shadow-2xl border border-[#232a3a] p-8 w-full max-w-md relative">
+      <div className="bg-[#181e29] rounded-2xl shadow-2xl border border-[#232a3a] p-8 w-full max-w-md relative flex flex-col items-center gap-4">
         <button
           className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold focus:outline-none"
           onClick={onClose}
@@ -47,44 +25,14 @@ function RegisterEventsPopup({ open, onClose, availableEvents, onRegister, loadi
         >
           &times;
         </button>
-        <div className="flex flex-col items-center gap-4">
-          <div className="text-2xl font-bold text-white mb-2">Register for Events</div>
-          <div className="text-gray-300 mb-2 text-center">You haven't registered for any events yet. Please select at least one event to participate in!</div>
-          <div className="w-full mb-2">
-            <div className="flex flex-col sm:flex-row gap-2 mb-2 w-full">
-              <select
-                className="w-full sm:flex-1 px-3 py-2 rounded-lg border border-[#232a3a] bg-[#232a3a] text-white"
-                value={addEvent}
-                onChange={e => setAddEvent(e.target.value)}
-              >
-                <option value="">Select an event...</option>
-                {availableEvents.filter(e => !selectedEvents.includes(e.name)).map(event => (
-                  <option key={event.id} value={event.name}>{event.name}</option>
-                ))}
-              </select>
-              <button
-                className="w-full sm:w-auto px-3 py-2 rounded-lg bg-blue-500 text-white font-semibold hover:bg-blue-600 transition"
-                onClick={handleAdd}
-                disabled={!addEvent}
-              >Add</button>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {selectedEvents.map(event => (
-                <span key={event} className="bg-blue-700 text-white px-3 py-1 rounded-lg flex items-center gap-2">
-                  {event}
-                  <button className="ml-1 text-xs text-red-300 hover:text-red-500" onClick={() => handleRemove(event)}>&times;</button>
-                </span>
-              ))}
-            </div>
-          </div>
-          <button
-            className="mt-4 w-full py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition disabled:opacity-50"
-            onClick={handleRegister}
-            disabled={selectedEvents.length === 0 || loading}
-          >
-            {loading ? 'Registering...' : 'Register'}
-          </button>
-        </div>
+        <div className="text-2xl font-bold text-white mb-2">Register for {registrationType}</div>
+        <div className="text-gray-300 mb-4 text-center">{message}</div>
+        <a
+          href="/register"
+          className="w-full py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition text-center"
+        >
+          Go to Registration
+        </a>
       </div>
     </div>
   );
@@ -115,6 +63,13 @@ export default function Dashboard() {
     description: ''
   });
   const [savingAnnouncement, setSavingAnnouncement] = useState(false);
+  const [schoolEmail, setSchoolEmail] = useState<string | null>(null);
+  const [registerPopupMessage, setRegisterPopupMessage] = useState<string | null>(null);
+  const [registerPopupType, setRegisterPopupType] = useState<string>('');
+  const [clubRegistrationOpenDate, setClubRegistrationOpenDate] = useState<Date | null>(null);
+  const [clubRegistrationCloseDate, setClubRegistrationCloseDate] = useState<Date | null>(null);
+  const [eventRegistrationOpenDate, setEventRegistrationOpenDate] = useState<Date | null>(null);
+  const [eventRegistrationCloseDate, setEventRegistrationCloseDate] = useState<Date | null>(null);
 
   // Fetch available events from master_competitive_events
   useEffect(() => {
@@ -182,6 +137,25 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
+    const fetchDeadlines = async () => {
+      const { data: deadlines, error } = await supabase
+        .from('registrationDeadlines')
+        .select('deadline, date');
+      if (!error && deadlines) {
+        deadlines.forEach((row: { deadline: string; date: string }) => {
+          // Parse as PST (America/Los_Angeles)
+          const localDate = new Date(row.date + 'T00:00:00-08:00');
+          if (row.deadline === 'Club Registration Open') setClubRegistrationOpenDate(localDate);
+          if (row.deadline === 'Club Registration Close') setClubRegistrationCloseDate(localDate);
+          if (row.deadline === 'Event Registration Open') setEventRegistrationOpenDate(localDate);
+          if (row.deadline === 'Event Registration Close') setEventRegistrationCloseDate(localDate);
+        });
+      }
+    };
+    fetchDeadlines();
+  }, []);
+
+  useEffect(() => {
     const fetchUserAndEvents = async () => {
       const { data, error } = await supabase.auth.getUser();
       if (error || !data.user) {
@@ -190,25 +164,39 @@ export default function Dashboard() {
         return;
       }
       setUser(data.user);
-      // Fetch user events from profiles table
+      // Fetch user events and schoolEmail from profiles table
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('events')
+        .select('events, schoolEmail')
         .eq('id', data.user.id)
         .single();
       if (!profileError && profile) {
         setUserEvents(Array.isArray(profile.events) ? profile.events : []);
-        if (!profile.events || profile.events.length === 0) {
-          setShowRegisterPopup(true);
+        setSchoolEmail(profile.schoolEmail || '');
+        // Registration popup logic
+        const now = new Date();
+        const clubRegOpen = clubRegistrationOpenDate && clubRegistrationCloseDate && now >= clubRegistrationOpenDate && now <= clubRegistrationCloseDate;
+        const eventRegOpen = eventRegistrationOpenDate && eventRegistrationCloseDate && now >= eventRegistrationOpenDate && now <= eventRegistrationCloseDate;
+        if (!profile.schoolEmail && clubRegOpen) {
+          setRegisterPopupMessage('You haven\'t registered to officially join North Creek TSA yet. Please do so here.');
+          setRegisterPopupType('North Creek TSA');
+        } else if ((Array.isArray(profile.events) ? profile.events.length : 0) < 1 && eventRegOpen && profile.schoolEmail) {
+          setRegisterPopupMessage('You haven\'t registered for any competitive events yet. Please do so here.');
+          setRegisterPopupType('events');
+        } else {
+          setRegisterPopupMessage(null);
+          setRegisterPopupType('');
         }
       } else {
         setUserEvents([]);
-        setShowRegisterPopup(true);
+        setSchoolEmail('');
+        setRegisterPopupMessage('Please register to be a part of North Creek TSA here.');
+        setRegisterPopupType('North Creek TSA');
       }
       setLoading(false);
     };
     fetchUserAndEvents();
-  }, [router]);
+  }, [router, clubRegistrationOpenDate, clubRegistrationCloseDate, eventRegistrationOpenDate, eventRegistrationCloseDate]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -258,12 +246,11 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#0a101f] text-white flex flex-col">
-      <RegisterEventsPopup
-        open={showRegisterPopup}
-        onClose={() => setShowRegisterPopup(false)}
-        availableEvents={availableEvents}
-        onRegister={handleRegisterEvents}
-        loading={registerLoading}
+      <RegisterPopup
+        open={!!registerPopupMessage}
+        message={registerPopupMessage || ''}
+        registrationType={registerPopupType}
+        onClose={() => setRegisterPopupMessage(null)}
       />
 
       {/* Spacer for nav */}
@@ -325,19 +312,19 @@ export default function Dashboard() {
           >
             <button 
               onClick={() => router.push('/calendar')}
-              className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow hover:bg-blue-900/30 transition"
+              className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow hover:bg-blue-900/30 transition cursor-pointer"
             >
               View All Events
             </button>
             <button
-              className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow hover:bg-blue-900/30 transition"
+              className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow hover:bg-blue-900/30 transition cursor-pointer"
               onClick={() => router.push('/profile')}
             >
               My Profile
             </button>
             {/* disabled for now */}
-            <button disabled={true} className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow cursor-not-allowed">Register</button>
-            <button className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow hover:bg-blue-900/30 transition" onClick={() => router.push('/contact')}>Contact Us</button>
+            <button className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow hover:bg-blue-900/30 transition cursor-pointer" onClick={() => router.push('/register')}>Register</button>
+            <button className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-[#232a3a] text-white font-semibold shadow hover:bg-blue-900/30 transition cursor-pointer" onClick={() => router.push('/contact')}>Contact Us</button>
           </div>
         </div>
 
@@ -470,7 +457,7 @@ export default function Dashboard() {
         style={{boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}>
           <div
             ref={calendarRef}
-            className="flex overflow-x-auto gap-2 scrollbar-thin scrollbar-thumb-blue-900 scrollbar-track-transparent relative cursor-pointer mb-10 md:mb-0"
+            className="flex overflow-x-auto gap-2 pb-2 scrollbar-thin scrollbar-thumb-blue-900 scrollbar-track-transparent relative cursor-pointer mb-10 md:mb-0"
             style={{ WebkitOverflowScrolling: 'touch',}}
             onClick={() => router.push('/calendar')}
           >
