@@ -58,6 +58,7 @@ export default function Calendar() {
       reminderTime: 60
     }
   });
+  const [emailNotifications, setEmailNotifications] = useState(true);
 
   // Check if user is admin
   useEffect(() => {
@@ -87,6 +88,28 @@ export default function Calendar() {
     };
 
     checkAdminStatus();
+  }, []);
+
+  // Fetch user notification setting on mount
+  useEffect(() => {
+    const fetchNotificationSetting = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('settings')
+        .eq('id', user.id)
+        .single();
+      if (!error && data && data.settings) {
+        setEmailNotifications(data.settings.emailNotifications);
+        if (!data.settings.emailNotifications) {
+          // If notifications are disabled, set all reminders to 0
+          setEvents(events => events.map(ev => ({ ...ev, reminderTime: 0 })));
+        }
+        // Do NOT reset reminders when enabling notifications
+      }
+    };
+    fetchNotificationSetting();
   }, []);
 
   // Load events from database
@@ -219,6 +242,7 @@ export default function Calendar() {
   };
 
   const sendNotificationEmail = async (event: Event) => {
+    if (!emailNotifications) return; // Don't send if disabled
     try {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -623,16 +647,34 @@ export default function Calendar() {
                           </td>
                           <td className="p-3">
                             <div className="flex items-center gap-2">
-                              {event.reminderTime > 0 ? (
-                                <>
-                                  <BellIcon className="w-4 h-4 text-yellow-400" />
-                                  <span className="text-xs text-gray-300">
-                                    {notificationOption?.label}
-                                  </span>
-                                </>
-                              ) : (
-                                <span className="text-xs text-gray-500">None</span>
-                              )}
+                              {/* Notification Toggle */}
+                              <input
+                                type="checkbox"
+                                checked={event.reminderTime > 0}
+                                onChange={async (e) => {
+                                  const newTime = e.target.checked ? 60 : 0; // Default to 1 hour if enabling
+                                  await updateEventNotifications(event.id, newTime);
+                                }}
+                                className="form-checkbox h-5 w-5 text-blue-500 rounded"
+                                title={event.reminderTime > 0 ? 'Disable notifications' : 'Enable notifications'}
+                                disabled={!emailNotifications}
+                              />
+                              {/* Reminder Time Dropdown */}
+                              <select
+                                value={event.reminderTime}
+                                onChange={async (e) => {
+                                  await updateEventNotifications(event.id, parseInt(e.target.value));
+                                }}
+                                className="p-1 rounded bg-[#232a3a] border border-[#3a4151] text-xs text-gray-200"
+                                disabled={event.reminderTime === 0 || !emailNotifications}
+                                title="Set reminder time"
+                              >
+                                {notificationOptions.map(option => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
                             </div>
                           </td>
                           <td className="p-3">
