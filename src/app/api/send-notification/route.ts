@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('API route called - starting email send process');
+    
     const { to, subject, body, eventId } = await request.json();
+    console.log('Request data received:', { to, subject: subject?.substring(0, 50) + '...', eventId });
 
     if (!to || !subject || !body) {
+      console.error('Missing required fields:', { to: !!to, subject: !!subject, body: !!body });
       return NextResponse.json(
         { error: 'Missing required fields: to, subject, body' },
         { status: 400 }
@@ -20,9 +24,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('Resend API key found, importing Resend...');
+
     // Dynamic import to avoid build issues
     const { Resend } = await import('resend');
     const resend = new Resend(process.env.RESEND_API_KEY);
+
+    console.log('Resend client created, sending email...');
 
     // Send email using Resend
     const data = await resend.emails.send({
