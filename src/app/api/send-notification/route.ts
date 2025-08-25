@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       success: true, 
-      messageId: data.id,
+      messageId: data.data?.id || 'unknown',
       message: 'Email sent successfully' 
     });
 
