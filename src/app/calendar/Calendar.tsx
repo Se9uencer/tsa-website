@@ -248,28 +248,60 @@ export default function Calendar() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.email) return;
 
-      // In a real implementation, you would:
-      // 1. Use Supabase Edge Functions or a service like Resend/SendGrid
-      // 2. Send the email with event details
-      // 3. Update the event to mark email as sent
-      
-      console.log(`Sending notification email to ${user.email} for event: ${event.event}`);
-      
-      // Update the event in the database to mark email as sent
-      const { error: updateError } = await supabase
-        .from('calendar')
-        .update({ email_sent: true })
-        .eq('id', event.id);
+      // Create email content
+      const eventDate = new Date(event.date).toLocaleString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
 
-      if (updateError) {
-        console.error('Error updating email sent status:', updateError);
+      const subject = `Reminder: ${event.event}`;
+      const body = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #3b82f6;">North Creek TSA Event Reminder</h2>
+          <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #1e293b; margin-top: 0;">${event.event}</h3>
+            <p style="color: #64748b; margin: 8px 0;"><strong>Date & Time:</strong> ${eventDate}</p>
+            <p style="color: #64748b; margin: 8px 0;"><strong>Type:</strong> ${getEventTypeInfo(event).label}</p>
+            <p style="color: #64748b; margin: 8px 0;"><strong>Urgency:</strong> ${event.urgency}</p>
+            ${event.description ? `<p style="color: #64748b; margin: 8px 0;"><strong>Description:</strong> ${event.description}</p>` : ''}
+          </div>
+          <p style="color: #64748b; font-size: 14px;">This is an automated reminder from the North Creek TSA Portal.</p>
+        </div>
+      `;
+
+      // Send email via API route
+      const response = await fetch('/api/send-notification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: user.email,
+          subject,
+          body,
+          eventId: event.id
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send email');
       }
 
-      // Update local state - since we don't have notifications object anymore, just log the action
-      console.log(`Email sent for event: ${event.event}`);
+      console.log('Email sent successfully:', result);
+      
+      // Show success message (you can add a toast notification here)
+      alert('Test email sent successfully!');
       
     } catch (error) {
       console.error('Error sending notification email:', error);
+      alert('Failed to send email. Please try again.');
     }
   };
 
