@@ -1,0 +1,3 @@
+# Exclude Supabase functions from Vercel build
+supabase/functions/
+supabase/config.toml
