@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Resend } from 'resend';
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,10 +25,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Resend API key found, importing Resend...');
+    console.log('Resend API key found, creating client...');
 
-    // Dynamic import to avoid build issues
-    const { Resend } = await import('resend');
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     console.log('Resend client created, sending email...');
