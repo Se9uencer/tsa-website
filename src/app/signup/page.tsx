@@ -146,7 +146,7 @@ export default function SignUp() {
             {error && <div className="text-red-400 text-sm mb-2">{error}</div>}
             {message && <div className="text-green-400 text-sm mb-2">{message}</div>}
             <button type="submit" disabled={loading}
-              className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-500 to-violet-500 text-white text-xl font-semibold shadow-lg hover:from-blue-600 hover:to-violet-600 transition">
+              className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-500 to-violet-500 text-white text-xl font-semibold shadow-lg hover:from-blue-600 hover:to-violet-600 transition cursor-pointer">
               {loading ? 'Creating...' : 'Create Account'}
             </button>
           </div>
