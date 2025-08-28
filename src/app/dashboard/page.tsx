@@ -19,7 +19,7 @@ function RegisterPopup({ open, message, registrationType, onClose }: { open: boo
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-fade-in">
       <div className="bg-[#181e29] rounded-2xl shadow-2xl border border-[#232a3a] p-8 w-full max-w-md relative flex flex-col items-center gap-4">
         <button
-          className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold focus:outline-none"
+          className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold focus:outline-none cursor-pointer"
           onClick={onClose}
           aria-label="Close"
         >

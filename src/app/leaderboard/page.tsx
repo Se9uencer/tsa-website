@@ -89,7 +89,7 @@ function AddFriendPopup({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-fade-in">
       <div className="bg-[#181e29] rounded-2xl shadow-2xl border border-[#232a3a] p-6 w-full max-w-lg relative">
         <button
-          className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold focus:outline-none"
+          className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold focus:outline-none cursor-pointer"
           onClick={onClose}
           aria-label="Close"
         >
@@ -103,13 +103,13 @@ function AddFriendPopup({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <div className="max-h-64 overflow-y-auto">
+        <div className="max-h-64 overflow-y-auto custom-scrollbar">
           {filteredUsers.map((user) => (
             <div key={user.id} className="flex justify-between items-center p-2 hover:bg-[#2a3245] rounded">
               <span className="text-white">{user.full_name}</span>
               <button
                 onClick={() => onAdd(user.id)}
-                className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 text-sm"
+                className="px-3 py-1 rounded text-sm cursor-pointer bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition"
               >
                 Add
               </button>
@@ -264,7 +264,7 @@ export default function Leaderboard() {
             {["Gold", "Silver", "Bronze"].map((tier) => (
               <button
                 key={tier}
-                className={`px-4 py-2 rounded-lg border font-semibold text-base
+                className={`px-4 py-2 rounded-lg border font-semibold text-base cursor-pointer
                   ${tierColors[tier]}
                   ${filterTier === tier ? "ring-2 ring-blue-400" : "hover:ring-1 hover:ring-blue-300"}
                 `}
@@ -343,7 +343,7 @@ export default function Leaderboard() {
                     </div>
                     <button
                       onClick={() => handleRemoveFriend(friend.id)}
-                      className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 text-sm"
+                      className="px-3 py-1 rounded bg-red-700 text-white hover:bg-red-800 transition text-sm cursor-pointer"
                       title="Remove Friend"
                     >
                       Remove
@@ -358,7 +358,7 @@ export default function Leaderboard() {
           <div className="mt-6 text-center text-sm text-gray-400">Compare your progress with your friends!</div>
           <button
             onClick={() => setShowAddPopup(true)}
-            className="mt-4 w-full py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition"
+            className="mt-4 w-full py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition cursor-pointer"
           >
             Add Friends
           </button>
