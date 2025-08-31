@@ -6,7 +6,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 async function testNotifications() {
   try {
-    console.log('Testing notification function...');
+    console.log('🧪 Testing notification function...\n');
     
     const response = await fetch(`${SUPABASE_URL}/functions/v1/send-notifications`, {
       method: 'POST',
@@ -17,10 +17,16 @@ async function testNotifications() {
     });
 
     const result = await response.json();
-    console.log('Response:', result);
+    console.log('📊 Response Status:', response.status);
+    console.log('📊 Response Body:', JSON.stringify(result, null, 2));
     
     if (response.ok) {
       console.log('✅ Notification function executed successfully!');
+      if (result.notificationsSent > 0) {
+        console.log(`📧 Sent ${result.notificationsSent} notifications`);
+      } else {
+        console.log('📧 No notifications sent (no events due or no users with notifications enabled)');
+      }
     } else {
       console.log('❌ Notification function failed:', result.error);
     }

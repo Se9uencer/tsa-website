@@ -73,11 +73,15 @@ serve(async (req) => {
           continue;
         }
 
+        console.log(`Found ${users.length} users to check for notifications`);
+
         // Send email to each user who has notifications enabled
         for (const user of users) {
           const settings = user.settings || {};
-          if (settings.emailNotifications !== false) {
+          if (settings.emailNotifications !== false) { // Default to true if not set
             try {
+              console.log(`Sending notification to ${user.email} for event: ${event.event}`);
+              
               // Send email directly using Resend API
               const emailResponse = await fetch('https://api.resend.com/emails', {
                 method: 'POST',
@@ -94,14 +98,17 @@ serve(async (req) => {
               });
 
               if (emailResponse.ok) {
-                console.log(`Email sent to ${user.email} for event: ${event.event}`);
+                console.log(`✅ Email sent to ${user.email} for event: ${event.event}`);
                 notificationsSent++;
               } else {
-                console.error(`Failed to send email to ${user.email}:`, await emailResponse.text());
+                const errorText = await emailResponse.text();
+                console.error(`❌ Failed to send email to ${user.email}:`, errorText);
               }
             } catch (error) {
-              console.error(`Error sending email to ${user.email}:`, error);
+              console.error(`❌ Error sending email to ${user.email}:`, error);
             }
+          } else {
+            console.log(`⏭️ Skipping ${user.email} - notifications disabled`);
           }
         }
 
