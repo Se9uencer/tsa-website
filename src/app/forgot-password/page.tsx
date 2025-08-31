@@ -42,7 +42,7 @@ export default function ForgotPassword() {
           {error && <div className="text-red-600 text-sm">{error}</div>}
           {message && <div className="text-green-600 text-sm">{message}</div>}
           <button type="submit" disabled={loading}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow-lg hover:from-blue-600 hover:to-violet-600 transition">
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow-lg hover:from-blue-600 hover:to-violet-600 transition cursor-pointer">
             {loading ? 'Sending...' : 'Send Reset Link'}
           </button>
         </form>

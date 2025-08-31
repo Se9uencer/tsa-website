@@ -59,18 +59,22 @@ export default function Resources() {
       const eventNames = userEvents;
       const { data, error } = await supabase
         .from('resourcesDriveIDs')
-        .select('*')
+        .select('Name, DriveIDs')
         .in('Name', eventNames);
       if (!error && data) {
         const mapping: { [key: string]: { [col: string]: string } } = {};
         data.forEach((row: any) => {
-          const links: { [col: string]: string } = {};
-          Object.entries(row).forEach(([col, val]) => {
-            // Exclude the 'Full Folder' column and the 'Name' column
-            if (col !== 'Full Folder' && col !== 'Name' && val && typeof val === 'string') {
-              links[col] = val;
+          let links: { [col: string]: string } = {};
+          if (row.DriveIDs && typeof row.DriveIDs === 'string') {
+            try {
+              links = JSON.parse(row.DriveIDs);
+            } catch (e) {
+              // fallback if already object or invalid JSON
+              links = typeof row.DriveIDs === 'object' ? row.DriveIDs : {};
             }
-          });
+          } else if (row.DriveIDs && typeof row.DriveIDs === 'object') {
+            links = row.DriveIDs;
+          }
           mapping[row.Name] = links;
         });
         setResourceLinks(mapping);
@@ -149,17 +153,19 @@ export default function Resources() {
                         <div className="mt-3 mb-2 flex flex-col gap-2">
                           {resourceLinks[event] &&
                             Object.entries(resourceLinks[event]).map(([col, val]) => (
-                              <a
-                                key={col}
-                                href={`https://drive.google.com/${val}`}
-                                className="bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent hover:from-blue-700 hover:to-violet-700 transition-colors duration-200 text-lg pl-8"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                {isMobile
-                                  ? (<>{col} <span className="text-gray-100 md:text-violet-500">&#8599;</span></>)
-                                  : (<>{col} &#8599;</>)}
-                              </a>
+                              col != "Full Folder" ?
+                                <a
+                                  key={col}
+                                  href={`https://drive.google.com/${val}`}
+                                  className="bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent hover:from-blue-700 hover:to-violet-700 transition-colors duration-200 text-lg pl-8"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {isMobile
+                                    ? (<>{col} <span className="text-gray-100 md:text-violet-500">&#8599;</span></>)
+                                    : (<>{col} &#8599;</>)}
+                                </a>
+                                : null
                             ))
                           }
                           {!resourceLinks[event] && (

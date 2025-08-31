@@ -83,7 +83,7 @@ export default function SignIn() {
             <Link href="/forgot-password" className="text-blue-400 hover:underline text-base font-medium mb-2">Forgot your password?</Link>
             {error && <div className="text-red-400 text-sm mb-2">{error}</div>}
             <button type="submit" disabled={loading}
-              className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-500 to-violet-500 text-white text-xl font-semibold shadow-lg hover:from-blue-600 hover:to-violet-600 transition">
+              className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-500 to-violet-500 text-white text-xl font-semibold shadow-lg hover:from-blue-600 hover:to-violet-600 transition cursor-pointer">
               {loading ? 'Signing In...' : 'Sign In'}
             </button>
           </div>

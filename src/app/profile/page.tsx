@@ -79,17 +79,27 @@ export default function Profile() {
     const fetchEventResources = async () => {
       if (!userEvents || userEvents.length === 0) return;
       setResourcesLoading(true);
-      const eventNames = userEvents
+      const eventNames = userEvents;
       const { data, error } = await supabase
         .from('resourcesDriveIDs')
-        .select('Name, "Full Folder", Rubric')
+        .select('Name, DriveIDs')
         .in('Name', eventNames);
       if (!error && data) {
         const resourceMap: { [eventName: string]: { rubricUrl: string, resourcesUrl: string } } = {};
         data.forEach((row: any) => {
+          let driveIDs: { [key: string]: string } = {};
+          if (row.DriveIDs && typeof row.DriveIDs === 'string') {
+            try {
+              driveIDs = JSON.parse(row.DriveIDs);
+            } catch (e) {
+              driveIDs = typeof row.DriveIDs === 'object' ? row.DriveIDs : {};
+            }
+          } else if (row.DriveIDs && typeof row.DriveIDs === 'object') {
+            driveIDs = row.DriveIDs;
+          }
           resourceMap[row.Name] = {
-            rubricUrl: row.Rubric ? `https://drive.google.com/${row.Rubric}` : '#',
-            resourcesUrl: row["Full Folder"] ? `https://drive.google.com/${row["Full Folder"]}` : '#',
+            rubricUrl: driveIDs['Rubric'] ? `https://drive.google.com/${driveIDs['Rubric']}` : '#',
+            resourcesUrl: driveIDs['Full Folder'] ? `https://drive.google.com/${driveIDs['Full Folder']}` : '#',
           };
         });
         setEventResourceLinks(resourceMap);

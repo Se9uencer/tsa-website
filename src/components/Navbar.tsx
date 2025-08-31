@@ -38,7 +38,14 @@ export default function Navbar() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [settings, setSettings] = useState<{ emailNotifications: boolean }>({ emailNotifications: true });
+  // Settings list for dynamic rendering
+  const SETTINGS_LIST = [
+    "emailNotifications",
+    // Add more settings here as needed
+  ];
+  const [settings, setSettings] = useState<{ [key: string]: boolean }>(
+    Object.fromEntries(SETTINGS_LIST.map((name) => [name, true]))
+  );
   // Track loading state for settings
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
@@ -80,7 +87,15 @@ export default function Navbar() {
           .eq('id', user.id)
           .single();
         if (!error && data && data.settings) {
-          setSettings(data.settings);
+          // Ensure all settings in SETTINGS_LIST are present, defaulting to true
+          setSettings(
+            SETTINGS_LIST.reduce((acc, name) => {
+              acc[name] = data.settings[name] !== undefined ? data.settings[name] : true;
+              return acc;
+            }, {} as { [key: string]: boolean })
+          );
+        } else {
+          setSettings(Object.fromEntries(SETTINGS_LIST.map((name) => [name, true])));
         }
         setSettingsLoading(false);
       };
@@ -218,17 +233,19 @@ export default function Navbar() {
             <button className="absolute top-4 right-4 text-gray-400 hover:text-white" onClick={() => setShowSettingsModal(false)}>&times;</button>
             <div className="text-xl font-bold mb-4 text-white">Settings</div>
             <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <span className="text-white">Email Notifications</span>
-                <input
-                  type="checkbox"
-                  className="form-checkbox h-5 w-5 text-blue-500 rounded"
-                  name="emailNotifications"
-                  checked={settings.emailNotifications}
-                  onChange={handleSettingsChange}
-                  disabled={settingsLoading}
-                />
-              </div>
+              {SETTINGS_LIST.map((name) => (
+                <div className="flex items-center justify-between" key={name}>
+                  <span className="text-white">{name.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
+                  <input
+                    type="checkbox"
+                    className="form-checkbox h-5 w-5 text-blue-500 rounded"
+                    name={name}
+                    checked={settings[name]}
+                    onChange={handleSettingsChange}
+                    disabled={settingsLoading}
+                  />
+                </div>
+              ))}
               <button
                 className="mt-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition"
                 onClick={handleSaveSettings}
