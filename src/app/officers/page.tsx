@@ -117,7 +117,7 @@ export default function Officers() {
       </h1>
 
       {/* Officers Cards */}
-      <div className="flex flex-wrap justify-center gap-10 w-full max-w-6xl">
+      <div className="flex flex-wrap justify-center gap-12 w-full max-w-6xl">
         {officersLoading
           ? Array.from({ length: 6 }).map((_, i) => (
               <div
@@ -136,7 +136,7 @@ export default function Officers() {
           : officers.map((officer, i) => (
               <div
                 key={i}
-                className="flex flex-col md:flex-row bg-[#181e29] border rounded-3xl shadow-xl overflow-hidden p-6 gap-6 items-center border-[#232a3a] h-72 w-full max-w-xs sm:max-w-md min-w-0 min-h-[340px] sm:min-h-[288px] mx-auto"
+                className="flex flex-col md:flex-row bg-[#181e29] border rounded-3xl shadow-xl overflow-hidden p-6 gap-6 items-center border-[#232a3a] h-72 w-full md:w-[60%] lg:w-[45%] max-w-xl min-w-0 min-h-[340px] sm:min-h-[288px]"
                 style={{
                   boxShadow:
                     "0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a",

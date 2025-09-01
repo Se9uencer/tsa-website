@@ -12,6 +12,26 @@ function getDaysInMonth(year: number, month: number) {
   return Array.from({ length: new Date(year, month + 1, 0).getDate() }, (_, i) => i + 1);
 }
 
+// Convert UTC time from Supabase back to PST/PDT for display
+// NOT NEEDED - JUST RETURNS THE ORIGINAL DATE WHICH IS PST
+function convertUTCToPST(utcDateString: string) {
+  const utcDate = new Date(utcDateString);
+  return utcDate;
+
+  // // Get the timezone offset for the current date to determine if it's PST or PDT
+  // const january = new Date(utcDate.getFullYear(), 0, 1);
+  // const july = new Date(utcDate.getFullYear(), 6, 1);
+  // const isPST = utcDate.getTimezoneOffset() > Math.min(january.getTimezoneOffset(), july.getTimezoneOffset());
+  
+  // // PST is UTC-8, PDT is UTC-7
+  // const pstOffset = isPST ? 8 : 7;
+  
+  // // Convert from UTC to PST/PDT by subtracting the offset
+  // const pstDate = new Date(utcDate.getTime() - (pstOffset * 60 * 60 * 1000));
+  
+  // return pstDate;
+}
+
 // New: Simple RegisterPopup for registration guidance
 function RegisterPopup({ open, message, registrationType, onClose }: { open: boolean, message: string, registrationType: string, onClose: () => void }) {
   if (!open) return null;
@@ -89,7 +109,7 @@ export default function Dashboard() {
     const fetchUpcomingEvents = async () => {
       const { data, error } = await supabase
         .from('calendar')
-        .select('id, event, date, type, urgency, description')
+        .select('id, event, date, type, urgency, description, location')
         .order('date', { ascending: true });
       if (!error && data) {
         const now = new Date();
@@ -281,19 +301,24 @@ export default function Dashboard() {
                     <div>
                       <div className="font-medium">{event.event}</div>
                       <div className="text-gray-400 text-sm">
-                        {new Date(event.date).toLocaleString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          hour12: true
-                        })}
+                      {convertUTCToPST(event.date).toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
                       </div>
+                      {event.location && (
+                        <div className="text-gray-500 text-xs mt-1">
+                          📍 {event.location}
+                        </div>
+                      )}
                     </div>
                     <button 
                       onClick={() => handleViewEventDetails(event)}
-                      className="mt-2 sm:mt-0 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition"
+                      className="mt-2 sm:mt-0 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition cursor-pointer"
                     >
                       View Details
                     </button>
@@ -341,14 +366,14 @@ export default function Dashboard() {
                   <div key={ann.id} className="mb-6 last:mb-0">
                     <div className="font-medium mb-1">{ann.title}</div>
                     <div className="text-gray-400 text-xs mb-1">
-                      {new Date(ann.date).toLocaleString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                      })}
+                    {convertUTCToPST(ann.date).toLocaleString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true
+                    })}
                     </div>
                     <div className="text-gray-300 text-sm line-clamp-2">{ann.description}</div>
                   </div>
@@ -360,7 +385,7 @@ export default function Dashboard() {
             {isAdmin && (
               <div className="w-full flex justify-center mt-10">
                 <button
-                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition"
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition cursor-pointer"
                   onClick={() => setShowAddAnnouncement(true)}
                 >
                   Add Announcement
@@ -408,16 +433,28 @@ export default function Dashboard() {
                       disabled={savingAnnouncement || !newAnnouncement.title || !newAnnouncement.date || !newAnnouncement.description}
                       onClick={async () => {
                         setSavingAnnouncement(true);
-                        // Insert into Supabase
+                        // Insert into Supabase with proper timezone handling
+                        // The input datetime-local is in local timezone, we need to append the current timezone offset
+                        const inputDate = new Date(newAnnouncement.date);
+                        
+                        // Determine if we're currently in PST (-08) or PDT (-07)
+                        const january = new Date(inputDate.getFullYear(), 0, 1);
+                        const july = new Date(inputDate.getFullYear(), 6, 1);
+                        const isPST = inputDate.getTimezoneOffset() > Math.min(january.getTimezoneOffset(), july.getTimezoneOffset());
+                        const timezoneOffset = isPST ? '-08' : '-07';
+                        
+                        // Format the date string with timezone offset for Supabase timestamptz
+                        const dateWithTimezone = newAnnouncement.date + ':00' + timezoneOffset + ':00';
+
                         const { error } = await supabase
                           .from('announcements')
                           .insert([
                             {
                               title: newAnnouncement.title,
-                              date: newAnnouncement.date,
+                              date: dateWithTimezone, // Store with timezone offset
                               description: newAnnouncement.description
                             }
-                          ]);
+                          ]);                        
                         setSavingAnnouncement(false);
                         if (!error) {
                           setShowAddAnnouncement(false);
@@ -453,11 +490,11 @@ export default function Dashboard() {
         >
           {now.toLocaleString('default', { month: 'long', year: 'numeric' })}
         </div>
-        <div className='px-4 pt-4 pb-2 rounded-2xl'
+        <div className='px-4 pt-4 pb-1 md:pb-4 rounded-2xl'
         style={{boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}>
           <div
             ref={calendarRef}
-            className="flex overflow-x-auto gap-2 pb-2 scrollbar-thin scrollbar-thumb-blue-900 scrollbar-track-transparent relative cursor-pointer mb-10 md:mb-0"
+            className="flex overflow-x-auto gap-2 md:pb-2 scrollbar-thin scrollbar-thumb-blue-900 scrollbar-track-transparent relative cursor-pointer mb-10 md:mb-0"
             style={{ WebkitOverflowScrolling: 'touch',}}
             onClick={() => router.push('/calendar')}
           >
@@ -507,14 +544,21 @@ export default function Dashboard() {
             onMouseLeave={() => setTooltip(null)}
           >
             <div className="font-bold mb-1">{tooltip.event.event}</div>
-            <div className="text-xs text-gray-300">{new Date(tooltip.event.date).toLocaleString('en-US', {
+            <div className="text-xs text-gray-300">
+            {convertUTCToPST(tooltip.event.date).toLocaleString('en-US', {
               month: 'short',
               day: 'numeric',
               year: 'numeric',
               hour: '2-digit',
               minute: '2-digit',
               hour12: true
-            })}</div>
+            })}            
+            </div>
+            {tooltip.event.location && (
+              <div className="text-xs text-blue-300 mt-1">
+                📍 {tooltip.event.location}
+              </div>
+            )}
           </div>
         )}
       </div>

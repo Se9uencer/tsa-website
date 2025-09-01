@@ -49,6 +49,7 @@ async function addTestData() {
         type: 'meeting',
         urgency: 'medium',
         description: 'Test event for 15-minute reminder',
+        location: 'Room 101',
         reminderTime: 15
       },
       {
@@ -57,6 +58,7 @@ async function addTestData() {
         type: 'conference',
         urgency: 'high',
         description: 'Test event for 1-hour reminder',
+        location: 'Main Auditorium',
         reminderTime: 60
       }
     ];

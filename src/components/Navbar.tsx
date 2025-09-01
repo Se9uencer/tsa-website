@@ -186,7 +186,7 @@ export default function Navbar() {
               />
               <span className="font-semibold text-base text-white hidden sm:inline">{userName}</span>
               <button
-                className="p-1 rounded-full hover:bg-blue-900/30 transition"
+                className="p-1 rounded-full hover:bg-blue-900/30 transition cursor-pointer"
                 onClick={() => setDropdownOpen((open) => !open)}
               >
                 <ChevronDownIcon className="w-5 h-5 text-blue-400" />
@@ -199,10 +199,10 @@ export default function Navbar() {
                 <Link href="/profile" className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white" onClick={() => setDropdownOpen(false)}>
                   <UserIcon className="w-5 h-5 text-gray-300" /> Your Profile
                 </Link>
-                <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white" onClick={() => { setShowSettingsModal(true); setDropdownOpen(false); }}>
+                <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white cursor-pointer" onClick={() => { setShowSettingsModal(true); setDropdownOpen(false); }}>
                   <Cog6ToothIcon className="w-5 h-5 text-gray-300" /> Settings
                 </button>
-                <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white rounded-b-xl" onClick={handleSignOut}>
+                <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white rounded-b-xl cursor-pointer" onClick={handleSignOut}>
                   <ArrowRightOnRectangleIcon className="w-5 h-5 text-gray-300" /> Sign out
                 </button>
               </div>
@@ -211,7 +211,7 @@ export default function Navbar() {
         </div>
         {/* Mobile Nav Drawer */}
         <div className={`md:hidden bg-[#181e29] border-t border-[#232a3a] shadow-lg transition-all duration-500 ${navOpen ? 'opacity-100 max-h-[500px] pointer-events-auto' : 'opacity-0 max-h-0 pointer-events-none overflow-hidden'}`}>
-          <div className="flex flex-col gap-2 px-4 py-4">
+          <div className={`flex flex-col gap-2 px-4 py-4 ${navOpen ? 'overflow-y-auto max-h-[calc(100vh-4rem)]' : ''}`}>
             {navLinks.map(link => (
               <Link
                 key={link.name}
