@@ -457,7 +457,7 @@ export default function Calendar() {
             {isAdmin && (
               <button
                 onClick={() => setShowAddModal(true)}
-                className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition flex items-center gap-2"
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition flex items-center gap-2 cursor-pointer"
               >
                 <PlusIcon className="w-5 h-5" />
                 Add Event
@@ -669,9 +669,11 @@ export default function Calendar() {
                             <div className="font-medium">{event.event}</div>
                           </td>
                           <td className="p-3">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${eventTypeInfo.color}`}>
-                              {eventTypeInfo.label}
-                            </span>
+                            <div className="inline-flex">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${eventTypeInfo.color} whitespace-nowrap`}>
+                                {eventTypeInfo.label}
+                              </span>
+                            </div>
                           </td>
                           <td className="p-3">
                             <span className={`px-3 py-1 rounded-full text-xs font-medium border-2 ${urgencyColors[event.urgency]} capitalize`}>
@@ -740,7 +742,7 @@ export default function Calendar() {
 
       {/* Add Event Modal - Only show for admins */}
       {showAddModal && isAdmin && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 custom-scrollbar">
           <div
             className="bg-[#181e29] rounded-2xl p-6 shadow-lg border border-[#232a3a] w-full max-w-sm relative max-h-[90vh] overflow-y-auto"
             style={{ boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}
@@ -749,7 +751,7 @@ export default function Calendar() {
               <h3 className="text-lg font-semibold">Add New Event</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="p-2 rounded-lg bg-[#232a3a] hover:bg-red-500/20 transition"
+                className="p-2 rounded-lg bg-[#232a3a] hover:bg-red-500/20 transition cursor-pointer"
               >
                 <XMarkIcon className="w-4 h-4" />
               </button>
@@ -875,14 +877,14 @@ export default function Calendar() {
               <div className="flex gap-2 pt-3">
                 <button
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-3 py-2 rounded-lg bg-[#232a3a] hover:bg-gray-700 transition text-sm"
+                  className="flex-1 px-3 py-2 rounded-lg bg-[#232a3a] hover:bg-gray-700 transition text-sm cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAddEvent}
                   disabled={!selectedDate || !newEvent.title}
-                  className="flex-1 px-3 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold hover:from-blue-600 hover:to-violet-600 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  className="flex-1 px-3 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold hover:from-blue-600 hover:to-violet-600 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm cursor-pointer"
                 >
                   Add Event
                 </button>

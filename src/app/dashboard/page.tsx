@@ -360,7 +360,7 @@ export default function Dashboard() {
             {isAdmin && (
               <div className="w-full flex justify-center mt-10">
                 <button
-                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition"
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition cursor-pointer"
                   onClick={() => setShowAddAnnouncement(true)}
                 >
                   Add Announcement
@@ -453,11 +453,11 @@ export default function Dashboard() {
         >
           {now.toLocaleString('default', { month: 'long', year: 'numeric' })}
         </div>
-        <div className='px-4 pt-4 pb-2 rounded-2xl'
+        <div className='px-4 pt-4 pb-1 md:pb-4 rounded-2xl'
         style={{boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}>
           <div
             ref={calendarRef}
-            className="flex overflow-x-auto gap-2 pb-2 scrollbar-thin scrollbar-thumb-blue-900 scrollbar-track-transparent relative cursor-pointer mb-10 md:mb-0"
+            className="flex overflow-x-auto gap-2 md:pb-2 scrollbar-thin scrollbar-thumb-blue-900 scrollbar-track-transparent relative cursor-pointer mb-10 md:mb-0"
             style={{ WebkitOverflowScrolling: 'touch',}}
             onClick={() => router.push('/calendar')}
           >

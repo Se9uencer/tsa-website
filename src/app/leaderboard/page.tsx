@@ -325,7 +325,7 @@ export default function Leaderboard() {
           style={{ backgroundColor: "#181e29", boxShadow: "0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a" }}
         >
           <h2 className="text-2xl font-bold text-blue-200 mb-4 text-center">Friends Dashboard</h2>
-          <div className="max-h-[400px] overflow-y-auto">
+          <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
             <ul className="flex flex-col gap-4">
               {friends
                 .sort((a, b) => (b.points ?? 0) - (a.points ?? 0))
