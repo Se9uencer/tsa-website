@@ -12,6 +12,7 @@ interface Event {
   type: string; // Now any string
   urgency: 'low' | 'medium' | 'high';
   description?: string;
+  location: string; // Required location field
   reminderTime: number; // minutes before event
 }
 
@@ -54,6 +55,7 @@ export default function Calendar() {
     type: 'meeting' as Event['type'],
     urgency: 'medium' as Event['urgency'],
     description: '',
+    location: '', // Required location field
     notifications: {
       reminderTime: 60
     }
@@ -135,38 +137,13 @@ export default function Calendar() {
         type: item.type,
         urgency: item.urgency,
         description: item.description,
+        location: item.location || 'TBD', // Include location, default to 'TBD' if missing
         reminderTime: item.reminderTime
       }));
 
       console.log('Transformed events:', loadedEvents);
+      setEvents(loadedEvents);
       
-      // If no events loaded from database, add some sample events for testing
-      if (loadedEvents.length === 0) {
-        console.log('No events found in database, adding sample events for testing');
-        const sampleEvents: Event[] = [
-          {
-            id: '1',
-            event: 'TSA Regional Conference',
-            date: '2024-12-15T10:00:00',
-            type: 'conference',
-            urgency: 'high',
-            description: 'Annual regional TSA conference with competitions and workshops.',
-            reminderTime: 10080
-          },
-          {
-            id: '2',
-            event: 'Project Submission Deadline',
-            date: '2024-12-20T17:00:00',
-            type: 'due_date',
-            urgency: 'high',
-            description: 'Final deadline for all competition project submissions.',
-            reminderTime: 1440
-          }
-        ];
-        setEvents(sampleEvents);
-      } else {
-        setEvents(loadedEvents);
-      }
 
       // Check if there's an event ID in the URL (from dashboard)
       const eventId = searchParams.get('event');
@@ -213,11 +190,13 @@ export default function Calendar() {
     console.log(`Looking for events on ${dateStr}, total events: ${events.length}`);
     
     const dayEvents = events.filter(event => {
-      // Extract just the date part from the timestamp (YYYY-MM-DD)
-      const eventDate = event.date.split('T')[0];
-      const matches = eventDate === dateStr;
+      // Convert UTC time from Supabase to PST/PDT for date comparison
+      const eventDatePST = convertUTCToPST(event.date);
+      // Use local date methods to get the date in PST/PDT without converting back to UTC
+      const eventDateStr = `${eventDatePST.getFullYear()}-${String(eventDatePST.getMonth() + 1).padStart(2, '0')}-${String(eventDatePST.getDate()).padStart(2, '0')}`;
+      const matches = eventDateStr === dateStr;
       if (matches) {
-        console.log(`Found event: ${event.event} on ${eventDate}`);
+        console.log(`Found event: ${event.event} on ${eventDateStr}`);
       }
       return matches;
     });
@@ -241,6 +220,25 @@ export default function Calendar() {
     return { label: event.type, color: 'from-indigo-500 to-indigo-600' };
   };
 
+  // Convert UTC time from Supabase back to PST/PDT [NOT NEEDED - JUST RETURNS THE ORIGINAL DATE WHICH IS PST]
+  const convertUTCToPST = (utcDateString: string) => {
+    const utcDate = new Date(utcDateString);
+    return utcDate;
+    
+    // // Get the timezone offset for the current date to determine if it's PST or PDT
+    // const january = new Date(utcDate.getFullYear(), 0, 1);
+    // const july = new Date(utcDate.getFullYear(), 6, 1);
+    // const isPST = utcDate.getTimezoneOffset() > Math.min(january.getTimezoneOffset(), july.getTimezoneOffset());
+    
+    // // PST is UTC-8, PDT is UTC-7
+    // const pstOffset = isPST ? 8 : 7;
+    
+    // // Convert from UTC to PST/PDT by subtracting the offset
+    // const pstDate = new Date(utcDate.getTime() - (pstOffset * 60 * 60 * 1000));
+    
+    // return pstDate;
+  };
+
   const sendNotificationEmail = async (event: Event) => {
     if (!emailNotifications) return; // Don't send if disabled
     try {
@@ -248,8 +246,8 @@ export default function Calendar() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.email) return;
 
-      // Create email content
-      const eventDate = new Date(event.date).toLocaleString('en-US', {
+      // Create email content using PST/PDT time
+      const eventDate = convertUTCToPST(event.date).toLocaleString('en-US', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
@@ -267,6 +265,7 @@ export default function Calendar() {
             <h3 style="color: #1e293b; margin-top: 0;">${event.event}</h3>
             <p style="color: #64748b; margin: 8px 0;"><strong>Date & Time:</strong> ${eventDate}</p>
             <p style="color: #64748b; margin: 8px 0;"><strong>Type:</strong> ${getEventTypeInfo(event).label}</p>
+            <p style="color: #64748b; margin: 8px 0;"><strong>Location:</strong> ${event.location || 'TBD'}</p>
             <p style="color: #64748b; margin: 8px 0;"><strong>Urgency:</strong> ${event.urgency}</p>
             ${event.description ? `<p style="color: #64748b; margin: 8px 0;"><strong>Description:</strong> ${event.description}</p>` : ''}
           </div>
@@ -313,17 +312,34 @@ export default function Calendar() {
       // Combine date and time into a timestamp
       const dateTimeString = `${selectedDate}T${newEvent.time || '12:00'}:00`;
       
+      
+
+      // Insert event into Supabase calendar table with proper timezone handling
+      // The input datetime-local is in local timezone, we need to append the current timezone offset
+      const inputDate = new Date(dateTimeString);
+      
+      // Determine if we're currently in PST (-08) or PDT (-07)
+      const january = new Date(inputDate.getFullYear(), 0, 1);
+      const july = new Date(inputDate.getFullYear(), 6, 1);
+      const isPST = inputDate.getTimezoneOffset() > Math.min(january.getTimezoneOffset(), july.getTimezoneOffset());
+      const timezoneOffset = isPST ? '-08' : '-07';
+      
+      // Format the date string with timezone offset for Supabase timestamptz
+      const dateWithTimezone = dateTimeString + timezoneOffset + ':00';
+
       // Create event object for database
       const eventData = {
         event: newEvent.title,
-        date: dateTimeString, // Combined date+time as timestamp
+        date: dateWithTimezone, // Combined date+time as timestamp
         type: newEvent.type,
         urgency: newEvent.urgency,
         description: newEvent.description || '',
+        location: newEvent.location, // Include location
         reminderTime: newEvent.notifications.reminderTime
       };
 
-      // Insert event into Supabase calendar table
+      console.log("Event data:", eventData);
+
       const { data, error } = await supabase
         .from('calendar')
         .insert([eventData])
@@ -331,7 +347,7 @@ export default function Calendar() {
         .single();
 
       if (error) {
-        console.error('Error adding event:', error);
+        console.error('Error adding event:', error, "with event:", eventData);
         return;
       }
 
@@ -343,6 +359,7 @@ export default function Calendar() {
         type: data.type,
         urgency: data.urgency,
         description: data.description,
+        location: data.location || 'TBD', // Include location
         reminderTime: data.reminderTime
       };
 
@@ -355,6 +372,7 @@ export default function Calendar() {
       type: 'meeting', 
       urgency: 'medium', 
       description: '', 
+      location: '', // Reset location
       notifications: {
         reminderTime: 60
       }
@@ -477,7 +495,7 @@ export default function Calendar() {
               <div className="flex items-center justify-between mb-6">
                 <button
                   onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
-                  className="p-2 rounded-lg bg-[#232a3a] hover:bg-blue-900/30 transition"
+                  className="p-2 rounded-lg bg-[#232a3a] hover:bg-blue-900/30 transition cursor-pointer"
                 >
                   <ChevronLeftIcon className="w-5 h-5" />
                 </button>
@@ -486,7 +504,7 @@ export default function Calendar() {
                 </h2>
                 <button
                   onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
-                  className="p-2 rounded-lg bg-[#232a3a] hover:bg-blue-900/30 transition"
+                  className="p-2 rounded-lg bg-[#232a3a] hover:bg-blue-900/30 transition cursor-pointer"
                 >
                   <ChevronRightIcon className="w-5 h-5" />
                 </button>
@@ -536,7 +554,7 @@ export default function Calendar() {
                               className={`w-2 h-2 rounded-full bg-gradient-to-r ${eventTypeInfo.color} ${
                                 urgencyColors[event.urgency]
                               } border-2 relative`}
-                              title={`${event.event} (${eventTypeInfo.label})`}
+                              title={`${event.event} (${eventTypeInfo.label})${event.location ? ` - ${event.location}` : ''}`}
                             >
                               {/* Reminder indicator */}
                               {event.reminderTime > 0 && (
@@ -558,9 +576,17 @@ export default function Calendar() {
                           <div className="text-sm font-medium mb-1">Events:</div>
                           {dayEvents.map(event => {
                             const eventTypeInfo = getEventTypeInfo(event);
+                            const eventTimePST = convertUTCToPST(event.date).toLocaleTimeString('en-US', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: true
+                            });
                             return (
                               <div key={event.id} className="text-xs text-gray-300">
-                                • {event.event} ({eventTypeInfo.label})
+                                • {event.event} ({eventTypeInfo.label}) at {eventTimePST}
+                                {event.location && (
+                                  <span className="text-blue-400 ml-1">📍 {event.location}</span>
+                                )}
                                 {event.reminderTime > 0 && (
                                   <span className="text-yellow-400 ml-1">🔔</span>
                                 )}
@@ -631,6 +657,7 @@ export default function Calendar() {
                     <th className="text-left p-3 text-gray-400 font-medium">Date</th>
                     <th className="text-left p-3 text-gray-400 font-medium">Event</th>
                     <th className="text-left p-3 text-gray-400 font-medium">Type</th>
+                    <th className="text-left p-3 text-gray-400 font-medium">Location</th>
                     <th className="text-left p-3 text-gray-400 font-medium">Urgency</th>
                     <th className="text-left p-3 text-gray-400 font-medium">Notifications</th>
                     <th className="text-left p-3 text-gray-400 font-medium">Description</th>
@@ -655,14 +682,14 @@ export default function Calendar() {
                         >
                           <td className="p-3">
                             <div className="text-sm font-medium">
-                              {new Date(event.date).toLocaleString('en-US', { 
-                                month: 'short', 
-                                day: 'numeric',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: true
-                              })}
+                            {convertUTCToPST(event.date).toLocaleString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: true
+                            })}
                             </div>
                           </td>
                           <td className="p-3">
@@ -673,6 +700,11 @@ export default function Calendar() {
                               <span className={`px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${eventTypeInfo.color} whitespace-nowrap`}>
                                 {eventTypeInfo.label}
                               </span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="text-sm text-gray-300 max-w-xs truncate">
+                              {`📍 ${event.location}` || 'No location'}
                             </div>
                           </td>
                           <td className="p-3">
@@ -845,6 +877,18 @@ export default function Calendar() {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-medium mb-1">Location</label>
+                <input
+                  type="text"
+                  value={newEvent.location}
+                  onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                  placeholder="Enter event location"
+                  className="w-full p-2 rounded-lg bg-[#232a3a] border border-[#3a4151] focus:border-blue-500 focus:outline-none text-sm"
+                  required
+                />
+              </div>
+
               {/* Reminder Settings */}
               <div className="border-t border-[#232a3a] pt-3">
                 <div className="flex items-center gap-2 mb-2">
@@ -883,7 +927,7 @@ export default function Calendar() {
                 </button>
                 <button
                   onClick={handleAddEvent}
-                  disabled={!selectedDate || !newEvent.title}
+                  disabled={!selectedDate || !newEvent.title || !newEvent.location}
                   className="flex-1 px-3 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold hover:from-blue-600 hover:to-violet-600 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm cursor-pointer"
                 >
                   Add Event
@@ -920,12 +964,12 @@ export default function Calendar() {
               <div>
                 <label className="block text-sm font-medium mb-1 text-gray-400">Date</label>
                 <div className="text-sm">
-                  {new Date(selectedEvent.date).toLocaleDateString('en-US', { 
-                    weekday: 'long',
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric'
-                  })}
+                {convertUTCToPST(selectedEvent.date).toLocaleDateString('en-US', { 
+                  weekday: 'long',
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric'
+                })}
                 </div>
               </div>
 
@@ -941,6 +985,13 @@ export default function Calendar() {
                   <span className={`px-3 py-1 rounded-full text-xs font-medium border-2 ${urgencyColors[selectedEvent.urgency]} capitalize`}>
                     {selectedEvent.urgency}
                   </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-400">Location</label>
+                <div className="text-sm text-gray-300">
+                  {selectedEvent.location || 'No location specified'}
                 </div>
               </div>
 
