@@ -90,7 +90,7 @@ serve(async (req) => {
                   'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                  from: 'onboarding@resend.dev',
+                  from: 'calendar-reminder@onresend.com',
                   to: [user.email],
                   subject: `Reminder: ${event.event}`,
                   html: createEmailBody(event),

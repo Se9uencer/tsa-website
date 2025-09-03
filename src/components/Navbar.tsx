@@ -39,8 +39,8 @@ export default function Navbar() {
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   // Settings list for dynamic rendering
-  const SETTINGS_LIST = [
-    "emailNotifications",
+  const SETTINGS_LIST: string[] = [
+    // "emailNotifications",
     // Add more settings here as needed
   ];
   const [settings, setSettings] = useState<{ [key: string]: boolean }>(
@@ -229,30 +229,38 @@ export default function Navbar() {
       {/* Settings Modal */}
       {showSettingsModal && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
-          <div className="bg-[#181e29] rounded-2xl shadow-2xl border border-[#232a3a] p-8 w-full max-w-md relative animate-fade-in">
-            <button className="absolute top-4 right-4 text-gray-400 hover:text-white" onClick={() => setShowSettingsModal(false)}>&times;</button>
+          <div className="bg-[#181e29] rounded-2xl shadow-2xl border border-[#232a3a] p-8 w-full max-w-md relative animate-fade-in mx-4">
+            <button className="absolute top-4 right-4 text-gray-400 hover:text-white cursor-pointer" onClick={() => setShowSettingsModal(false)}>&times;</button>
             <div className="text-xl font-bold mb-4 text-white">Settings</div>
             <div className="flex flex-col gap-4">
-              {SETTINGS_LIST.map((name) => (
-                <div className="flex items-center justify-between" key={name}>
-                  <span className="text-white">{name.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
-                  <input
-                    type="checkbox"
-                    className="form-checkbox h-5 w-5 text-blue-500 rounded"
-                    name={name}
-                    checked={settings[name]}
-                    onChange={handleSettingsChange}
-                    disabled={settingsLoading}
-                  />
+              {SETTINGS_LIST.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-400 text-lg">There aren't any settings to configure yet.</p>
                 </div>
-              ))}
-              <button
-                className="mt-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition"
-                onClick={handleSaveSettings}
-                disabled={settingsLoading}
-              >
-                {settingsLoading ? 'Saving...' : 'Save Changes'}
-              </button>
+              ) : (
+                <>
+                  {SETTINGS_LIST.map((name) => (
+                    <div className="flex items-center justify-between" key={name}>
+                      <span className="text-white">{name.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase())}</span>
+                      <input
+                        type="checkbox"
+                        className="form-checkbox h-5 w-5 text-blue-500 rounded"
+                        name={name}
+                        checked={settings[name]}
+                        onChange={handleSettingsChange}
+                        disabled={settingsLoading}
+                      />
+                    </div>
+                  ))}
+                  <button
+                    className="mt-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white font-semibold shadow hover:from-blue-600 hover:to-violet-600 transition"
+                    onClick={handleSaveSettings}
+                    disabled={settingsLoading}
+                  >
+                    {settingsLoading ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

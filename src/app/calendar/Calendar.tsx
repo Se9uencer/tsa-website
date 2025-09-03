@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, XMarkIcon, BellIcon } from '@heroicons/react/24/solid';
+import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import { supabase } from '@/lib/supabaseClient';
 import { useSearchParams } from 'next/navigation';
 
@@ -13,7 +13,7 @@ interface Event {
   urgency: 'low' | 'medium' | 'high';
   description?: string;
   location: string; // Required location field
-  reminderTime: number; // minutes before event
+  // reminderTime: number; // minutes before event
 }
 
 const eventTypes: Record<string, { label: string; color: string }> = {
@@ -29,15 +29,15 @@ const urgencyColors = {
   high: 'border-red-400'
 };
 
-const notificationOptions = [
-  { value: 0, label: 'No reminder' },
-  { value: 15, label: '15 minutes before' },
-  { value: 30, label: '30 minutes before' },
-  { value: 60, label: '1 hour before (relative to event time)' },
-  { value: 1440, label: '1 day before' },
-  { value: 2880, label: '2 days before' },
-  { value: 10080, label: '1 week before' }
-];
+// const notificationOptions = [
+//   { value: 0, label: 'No reminder' },
+//   { value: 15, label: '15 minutes before' },
+//   { value: 30, label: '30 minutes before' },
+//   { value: 60, label: '1 hour before (relative to event time)' },
+//   { value: 1440, label: '1 day before' },
+//   { value: 2880, label: '2 days before' },
+//   { value: 10080, label: '1 week before' }
+// ];
 
 export default function Calendar() {
   const searchParams = useSearchParams();
@@ -56,11 +56,11 @@ export default function Calendar() {
     urgency: 'medium' as Event['urgency'],
     description: '',
     location: '', // Required location field
-    notifications: {
-      reminderTime: 60
-    }
+    // notifications: {
+    //   reminderTime: 60
+    // }
   });
-  const [emailNotifications, setEmailNotifications] = useState(true);
+  // const [emailNotifications, setEmailNotifications] = useState(true);
 
   // Check if user is admin
   useEffect(() => {
@@ -93,26 +93,26 @@ export default function Calendar() {
   }, []);
 
   // Fetch user notification setting on mount
-  useEffect(() => {
-    const fetchNotificationSetting = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('settings')
-        .eq('id', user.id)
-        .single();
-      if (!error && data && data.settings) {
-        setEmailNotifications(data.settings.emailNotifications);
-        if (!data.settings.emailNotifications) {
-          // If notifications are disabled, set all reminders to 0
-          setEvents(events => events.map(ev => ({ ...ev, reminderTime: 0 })));
-        }
-        // Do NOT reset reminders when enabling notifications
-      }
-    };
-    fetchNotificationSetting();
-  }, []);
+  // useEffect(() => {
+  //   const fetchNotificationSetting = async () => {
+  //     const { data: { user } } = await supabase.auth.getUser();
+  //     if (!user) return;
+  //     const { data, error } = await supabase
+  //       .from('profiles')
+  //       .select('settings')
+  //       .eq('id', user.id)
+  //       .single();
+  //     if (!error && data && data.settings) {
+  //       setEmailNotifications(data.settings.emailNotifications);
+  //       if (!data.settings.emailNotifications) {
+  //         // If notifications are disabled, set all reminders to 0
+  //         setEvents(events => events.map(ev => ({ ...ev, reminderTime: 0 })));
+  //       }
+  //         // Do NOT reset reminders when enabling notifications
+  //     }
+  //   };
+  //   fetchNotificationSetting();
+  // }, []);
 
   // Load events from database
   const loadEvents = async () => {
@@ -138,7 +138,7 @@ export default function Calendar() {
         urgency: item.urgency,
         description: item.description,
         location: item.location || 'TBD', // Include location, default to 'TBD' if missing
-        reminderTime: item.reminderTime
+        // reminderTime: item.reminderTime
       }));
 
       console.log('Transformed events:', loadedEvents);
@@ -239,71 +239,71 @@ export default function Calendar() {
     // return pstDate;
   };
 
-  const sendNotificationEmail = async (event: Event) => {
-    if (!emailNotifications) return; // Don't send if disabled
-    try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) return;
+  // const sendNotificationEmail = async (event: Event) => {
+  //   if (!emailNotifications) return; // Don't send if disabled
+  //   try {
+  //     // Get current user
+  //     const { data: { user } } = await supabase.auth.getUser();
+  //     if (!user?.email) return;
 
-      // Create email content using PST/PDT time
-      const eventDate = convertUTCToPST(event.date).toLocaleString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      });
+  //     // Create email content using PST/PDT time
+  //     const eventDate = convertUTCToPST(event.date).toLocaleString('en-US', {
+  //       weekday: 'long',
+  //       year: 'numeric',
+  //       month: 'long',
+  //       day: 'numeric',
+  //       hour: '2-digit',
+  //       minute: '2-digit',
+  //       hour12: true
+  //     });
 
-      const subject = `Reminder: ${event.event}`;
-      const body = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #3b82f6;">North Creek TSA Event Reminder</h2>
-          <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #1e293b; margin-top: 0;">${event.event}</h3>
-            <p style="color: #64748b; margin: 8px 0;"><strong>Date & Time:</strong> ${eventDate}</p>
-            <p style="color: #64748b; margin: 8px 0;"><strong>Type:</strong> ${getEventTypeInfo(event).label}</p>
-            <p style="color: #64748b; margin: 8px 0;"><strong>Location:</strong> ${event.location || 'TBD'}</p>
-            <p style="color: #64748b; margin: 8px 0;"><strong>Urgency:</strong> ${event.urgency}</p>
-            ${event.description ? `<p style="color: #64748b; margin: 8px 0;"><strong>Description:</strong> ${event.description}</p>` : ''}
-          </div>
-          <p style="color: #64748b; font-size: 14px;">This is an automated reminder from the North Creek TSA Portal.</p>
-        </div>
-      `;
+  //     const subject = `Reminder: ${event.event}`;
+  //     const body = `
+  //       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  //       <h2 style="color: #3b82f6;">North Creek TSA Event Reminder</h2>
+  //       <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+  //       <h3 style="color: #1e293b; margin-top: 0;">${event.event}</h3>
+  //       <p style="color: #64748b; margin: 8px 0;"><strong>Date & Time:</strong> ${eventDate}</p>
+  //       <p style="color: #64748b; margin: 8px 0;"><strong>Type:</strong> ${getEventTypeInfo(event).label}</p>
+  //       <p style="color: #64748b; margin: 8px 0;"><strong>Location:</strong> ${event.location || 'TBD'}</p>
+  //       <p style="color: #64748b; margin:8px 0;"><strong>Urgency:</strong> ${event.urgency}</p>
+  //       ${event.description ? `<p style="color: #64748b; margin: 8px 0;"><strong>Description:</strong> ${event.description}</p>` : ''}
+  //       </div>
+  //       <p style="color: #64748b; font-size: 14px;">This is an automated reminder from the North Creek TSA Portal.</p>
+  //       </div>
+  //     `;
 
-      // Send email via API route
-      const response = await fetch('/api/send-notification', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: user.email,
-          subject,
-          body,
-          eventId: event.id
-        }),
-      });
+  //     // Send email via API route
+  //     const response = await fetch('/api/send-notification', {
+  //       method: 'POST',
+  //       headers: {
+  //       'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //       to: user.email,
+  //       subject,
+  //       body,
+  //       eventId: event.id
+  //       }),
+  //     });
 
-      const result = await response.json();
+  //     const result = await response.json();
 
-      if (!response.ok) {
-        console.error('API Error Response:', result);
-        throw new Error(result.error || 'Failed to send email');
-      }
+  //     if (!response.ok) {
+  //       console.error('API Error Response:', result);
+  //       throw new Error(result.error || 'Failed to send email');
+  //     }
 
-      console.log('Email sent successfully:', result);
+  //     console.log('Email sent successfully:', result);
       
-      // Show success message (you can add a toast notification here)
-      alert('Test email sent successfully!');
+  //     // Show success message (you can add a toast notification here)
+  //       alert('Test email sent successfully!');
       
-    } catch (error) {
-      console.error('Error sending notification email:', error);
-      alert('Failed to send email. Please try again.');
-    }
-  };
+  //   } catch (error) {
+  //     console.error('Error sending notification email:', error);
+  //     alert('Failed to send email. Please try again.');
+  //   }
+  // };
 
   const handleAddEvent = async () => {
     if (!selectedDate || !newEvent.title) return;
@@ -335,7 +335,7 @@ export default function Calendar() {
         urgency: newEvent.urgency,
         description: newEvent.description || '',
         location: newEvent.location, // Include location
-        reminderTime: newEvent.notifications.reminderTime
+        // reminderTime: newEvent.notifications.reminderTime
       };
 
       console.log("Event data:", eventData);
@@ -360,7 +360,7 @@ export default function Calendar() {
         urgency: data.urgency,
         description: data.description,
         location: data.location || 'TBD', // Include location
-        reminderTime: data.reminderTime
+        // reminderTime: data.reminderTime
       };
 
       setEvents([...events, event]);
@@ -373,9 +373,9 @@ export default function Calendar() {
       urgency: 'medium', 
       description: '', 
       location: '', // Reset location
-      notifications: {
-        reminderTime: 60
-      }
+      // notifications: {
+      //   reminderTime: 60
+      // }
     });
       setSelectedDate('');
     } catch (error) {
@@ -419,36 +419,36 @@ export default function Calendar() {
     }
   };
 
-  const updateEventNotifications = async (eventId: string, reminderTime: number) => {
-    try {
-      // Update event reminder time in Supabase calendar table
-      const { error } = await supabase
-        .from('calendar')
-        .update({
-          reminderTime: reminderTime
-        })
-        .eq('id', eventId);
+  // const updateEventNotifications = async (eventId: string, reminderTime: number) => {
+  //   try {
+  //     // Update event reminder time in Supabase calendar table
+  //     const { error } = await supabase
+  //       .from('calendar')
+  //       .update({
+  //         reminderTime: reminderTime
+  //       })
+  //       .eq('id', eventId);
 
-      if (error) {
-        console.error('Error updating event reminder time:', error);
-        return;
-      }
+  //     if (error) {
+  //       console.error('Error updating event reminder time:', error);
+  //       return;
+  //     }
 
-      // Update local state
-      const updatedEvents = events.map(event => 
-        event.id === eventId 
-          ? { ...event, reminderTime }
-          : event
-      );
-      setEvents(updatedEvents);
+  //     // Update local state
+  //     const updatedEvents = events.map(event => 
+  //       event.id === eventId 
+  //         ? { ...event, reminderTime }
+  //         : event
+  //       );
+  //       setEvents(updatedEvents);
       
-      if (selectedEvent?.id === eventId) {
-        setSelectedEvent({ ...selectedEvent, reminderTime });
-      }
-    } catch (error) {
-      console.error('Error updating event reminder time:', error);
-    }
-  };
+  //     if (selectedEvent?.id === eventId) {
+  //       setSelectedEvent({ ...selectedEvent, reminderTime });
+  //     }
+  //   } catch (error) {
+  //       console.error('Error updating event reminder time:', error);
+  //   }
+  // };
 
   const days = getDaysInMonth(currentDate);
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -557,9 +557,9 @@ export default function Calendar() {
                               title={`${event.event} (${eventTypeInfo.label})${event.location ? ` - ${event.location}` : ''}`}
                             >
                               {/* Reminder indicator */}
-                              {event.reminderTime > 0 && (
+                              {/* {event.reminderTime > 0 && (
                                 <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-yellow-400 rounded-full" />
-                              )}
+                              )} */}
                             </div>
                           );
                         })}
@@ -587,9 +587,9 @@ export default function Calendar() {
                                 {event.location && (
                                   <span className="text-blue-400 ml-1">📍 {event.location}</span>
                                 )}
-                                {event.reminderTime > 0 && (
+                                {/* {event.reminderTime > 0 && (
                                   <span className="text-yellow-400 ml-1">🔔</span>
-                                )}
+                                )} */}
                               </div>
                             );
                           })}
@@ -628,7 +628,7 @@ export default function Calendar() {
                 ))}
               </div>
 
-              <h3 className="text-xl font-semibold mb-4 mt-6">Notifications</h3>
+              {/* <h3 className="text-xl font-semibold mb-4 mt-6">Notifications</h3>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full bg-yellow-400 relative">
@@ -636,7 +636,7 @@ export default function Calendar() {
                   </div>
                   <span className="text-sm">Email notifications enabled</span>
                 </div>
-              </div>
+              </div> */}
 
 
             </div>
@@ -659,7 +659,7 @@ export default function Calendar() {
                     <th className="text-left p-3 text-gray-400 font-medium">Type</th>
                     <th className="text-left p-3 text-gray-400 font-medium">Location</th>
                     <th className="text-left p-3 text-gray-400 font-medium">Urgency</th>
-                    <th className="text-left p-3 text-gray-400 font-medium">Notifications</th>
+                    {/* <th className="text-left p-3 text-gray-400 font-medium">Notifications</th> */}
                     <th className="text-left p-3 text-gray-400 font-medium">Description</th>
                     {isAdmin && (
                       <th className="text-left p-3 text-gray-400 font-medium">Actions</th>
@@ -671,7 +671,7 @@ export default function Calendar() {
                     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                     .map(event => {
                       const eventTypeInfo = getEventTypeInfo(event);
-                      const notificationOption = notificationOptions.find(opt => opt.value === event.reminderTime);
+                      // const notificationOption = notificationOptions.find(opt => opt.value === event.reminderTime);
                       return (
                         <tr 
                           key={event.id} 
@@ -712,10 +712,10 @@ export default function Calendar() {
                               {event.urgency}
                             </span>
                           </td>
-                          <td className="p-3">
-                            <div className="flex items-center gap-2">
+                          {/* <td className="p-3">
+                            <div className="flex items-center gap-2"> */}
                               {/* Notification Toggle */}
-                              <input
+                              {/* <input
                                 type="checkbox"
                                 checked={event.reminderTime > 0}
                                 onChange={async (e) => {
@@ -727,7 +727,7 @@ export default function Calendar() {
                                 disabled={!emailNotifications}
                               />
                               {/* Reminder Time Dropdown */}
-                              <select
+                              {/* <select
                                 value={event.reminderTime}
                                 onChange={async (e) => {
                                   await updateEventNotifications(event.id, parseInt(e.target.value));
@@ -741,9 +741,10 @@ export default function Calendar() {
                                     {option.label}
                                   </option>
                                 ))}
-                              </select>
+                              </select> */}
+                              {/* <span className="text-gray-500 text-sm">Notifications disabled</span>
                             </div>
-                          </td>
+                          </td> */}
                           <td className="p-3">
                             <div className="text-sm text-gray-400 max-w-xs truncate">
                               {event.description || 'No description'}
@@ -890,7 +891,7 @@ export default function Calendar() {
               </div>
 
               {/* Reminder Settings */}
-              <div className="border-t border-[#232a3a] pt-3">
+              {/* <div className="border-t border-[#232a3a] pt-3">
                 <div className="flex items-center gap-2 mb-2">
                   <BellIcon className="w-4 h-4 text-yellow-400" />
                   <label className="text-sm font-medium">Reminder Settings</label>
@@ -916,7 +917,7 @@ export default function Calendar() {
                     ))}
                   </select>
                 </div>
-              </div>
+              </div> */}
 
               <div className="flex gap-2 pt-3">
                 <button
@@ -996,7 +997,7 @@ export default function Calendar() {
               </div>
 
               {/* Reminder Settings */}
-              <div className="border-t border-[#232a3a] pt-3">
+              {/* <div className="border-t border-[#232a3a] pt-3">
                 <div className="flex items-center gap-2 mb-2">
                   <BellIcon className="w-4 h-4 text-yellow-400" />
                   <label className="text-sm font-medium text-gray-400">Reminder Settings</label>
@@ -1027,7 +1028,7 @@ export default function Calendar() {
                     </button>
                   </div>
                 </div>
-              </div>
+              </div> */}
 
               {selectedEvent.description && (
                 <div>

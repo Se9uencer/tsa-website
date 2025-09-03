@@ -138,7 +138,7 @@ export default function FAQ() {
                 </span>
               </button>
               <div
-                className={`px-8 text-md text-purple-100 transition-all duration-300 ease-linear overflow-hidden ${openIndexes.includes(idx) ? 'max-h-40 opacity-100 pb-6' : 'max-h-0 opacity-0 pb-0'}`}
+                className={`px-8 text-md text-purple-100 transition-all duration-500 ease-in overflow-hidden ${openIndexes.includes(idx) ? 'max-h-[1000px] opacity-100 pb-6' : 'max-h-0 opacity-0 pb-0'}`}
                 style={{ pointerEvents: openIndexes.includes(idx) ? 'auto' : 'none' }}
               >
                 {renderAnswerWithLinks(q.answer)}
