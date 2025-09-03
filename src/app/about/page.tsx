@@ -125,6 +125,11 @@ export default function About() {
             <span className="text-xl font-bold bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent">Instagram: </span>
             <span className="text-xl text-blue-400"><a className="bg-gradient-to-r text-blue-400 hover:text-blue-500 duration-200" href='https://www.instagram.com/northcreektsa/' target="_blank" rel="noopener noreferrer">@northcreektsa</a></span>
           </div>
+
+          <div>
+            <span className="text-xl font-bold bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text w-fit text-transparent">TikTok: </span>
+            <span className="text-xl text-blue-400"><a className="bg-gradient-to-r text-blue-400 hover:text-blue-500 duration-200" href='https://www.tiktok.com/@northcreektsa' target="_blank" rel="noopener noreferrer">@northcreektsa</a></span>
+          </div>
         </div>
 
       </div>
@@ -135,15 +140,16 @@ export default function About() {
       {/* Timeline Bar and Cards (combined) */}
       <div className="w-full max-w-5xl mx-auto flex flex-col items-center">
         <div className="relative w-full flex items-center justify-center mb-6" style={{ minHeight: 120 }}>
-          {/* Left Arrow */}
-          <button
-            className="z-10 bg-black rounded-full w-8 h-8 flex items-center justify-center text-white text-xl shadow hover:bg-gray-800 transition disabled:opacity-40 mr-2"
-            onClick={() => setTimelineStart(s => Math.max(0, s - 1))}
-            disabled={timelineStart === 0 || loading || timelineEvents.length === 0}
-            aria-label="Previous events"
-          >
-            &#x25C0;
-          </button>
+          {/* Left Arrow - only show if there are events to scroll back to */}
+          {timelineEvents.length > timelineWindow && timelineStart > 0 && (
+            <button
+              className="z-10 bg-black rounded-full w-8 h-8 flex items-center justify-center text-white text-xl shadow hover:bg-gray-800 transition mr-2"
+              onClick={() => setTimelineStart(s => Math.max(0, s - 1))}
+              aria-label="Previous events"
+            >
+              &#x25C0;
+            </button>
+          )}
           {/* Timeline Cards and Dynamic Line */}
           <div className="relative flex flex-row items-center gap-6 w-auto justify-center z-10">
             {/* Dynamic timeline line behind cards */}
@@ -179,15 +185,16 @@ export default function About() {
               ))
             )}
           </div>
-          {/* Right Arrow */}
-          <button
-            className="z-10 bg-black rounded-full w-8 h-8 flex items-center justify-center text-white text-xl shadow hover:bg-gray-800 transition disabled:opacity-40 ml-2"
-            onClick={() => setTimelineStart(s => Math.min(maxStart, s + 1))}
-            disabled={timelineStart >= maxStart || loading || timelineEvents.length === 0}
-            aria-label="Next events"
-          >
-            &#x25B6;
-          </button>
+          {/* Right Arrow - only show if there are events to scroll forward to */}
+          {timelineEvents.length > timelineWindow && timelineStart < maxStart && (
+            <button
+              className="z-10 bg-black rounded-full w-8 h-8 flex items-center justify-center text-white text-xl shadow hover:bg-gray-800 transition ml-2"
+              onClick={() => setTimelineStart(s => Math.min(maxStart, s + 1))}
+              aria-label="Next events"
+            >
+              &#x25B6;
+            </button>
+          )}
         </div>
       </div>
     </div>

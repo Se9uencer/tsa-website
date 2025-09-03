@@ -65,10 +65,9 @@ export default function Dashboard() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; event: any } | null>(null);
+  const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showRegisterPopup, setShowRegisterPopup] = useState(false);
   const [registerLoading, setRegisterLoading] = useState(false);
   const [userEvents, setUserEvents] = useState<any[]>([]);
@@ -217,6 +216,15 @@ export default function Dashboard() {
     };
     fetchUserAndEvents();
   }, [router, clubRegistrationOpenDate, clubRegistrationCloseDate, eventRegistrationOpenDate, eventRegistrationCloseDate]);
+
+  // Cleanup tooltip timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (tooltipTimeout) {
+        clearTimeout(tooltipTimeout);
+      }
+    };
+  }, [tooltipTimeout]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -505,26 +513,39 @@ export default function Dashboard() {
                 <div
                   key={day}
                   className={`flex flex-col items-center group relative cursor-pointer select-none`}
-                  onMouseEnter={e => {
-                    if (isEvent) {
-                      const rect = (e.target as HTMLElement).getBoundingClientRect();
-                      setTooltip({ x: rect.left + rect.width / 2, y: rect.top, event });
-                    }
-                  }}
-                  onMouseLeave={() => setTooltip(null)}
-                  onClick={e => {
-                    e.stopPropagation(); // Prevent triggering the parent onClick
-                    if (isEvent) {
-                      const rect = (e.target as HTMLElement).getBoundingClientRect();
-                      setTooltip({ x: rect.left + rect.width / 2, y: rect.top, event });
-                    }
-                    router.push('/calendar');
-                  }}
+                  
                 >
                   <div
-                    className={`w-10 h-10 flex items-center justify-center rounded-full text-lg font-semibold
+                    className={`w-10 h-10 flex items-center justify-center rounded-full text-lg font-semibold cursor-pointer
                       ${isEvent ? 'bg-gradient-to-br from-blue-500 to-violet-500 text-white shadow-lg' : 'bg-[#232a3a] text-gray-300'}
                       border border-[#232a3a] transition hover:scale-105`}
+
+                      onMouseEnter={e => {
+                        if (isEvent) {
+                          // Clear any existing timeout
+                          if (tooltipTimeout) {
+                            clearTimeout(tooltipTimeout);
+                            setTooltipTimeout(null);
+                          }
+                          const rect = (e.target as HTMLElement).getBoundingClientRect();
+                          setTooltip({ x: rect.left + rect.width / 2, y: rect.top, event });
+                        }
+                      }}
+                      onMouseLeave={() => {
+                        // Clear any existing timeout
+                        if (tooltipTimeout) {
+                          clearTimeout(tooltipTimeout);
+                        }
+                        // Add a small delay to prevent flickering when moving between elements
+                        const timeout = setTimeout(() => setTooltip(null), 50);
+                        setTooltipTimeout(timeout);
+                      }}
+                      onClick={e => {
+                        e.stopPropagation(); // Prevent triggering the parent onClick
+                        if (isEvent) {
+                          router.push('/calendar');
+                        }
+                      }}
                   >
                     {day}
                   </div>
@@ -539,9 +560,13 @@ export default function Dashboard() {
         {/* Tooltip */}
         {tooltip && (
           <div
-            className="fixed z-50 px-4 py-2 rounded-xl bg-[#232a3a] text-white shadow-lg border border-blue-500 text-sm"
-            style={{ left: tooltip.x, top: tooltip.y - 60, transform: 'translate(-50%, 0)' }}
-            onMouseLeave={() => setTooltip(null)}
+            className="fixed z-50 px-4 py-2 rounded-xl bg-[#232a3a] text-white shadow-lg border border-blue-500 text-sm pointer-events-none"
+            style={{ 
+              left: tooltip.x, 
+              top: tooltip.y - 60, 
+              transform: 'translate(-50%, 0)',
+              transition: 'opacity 0.1s ease-in-out'
+            }}
           >
             <div className="font-bold mb-1">{tooltip.event.event}</div>
             <div className="text-xs text-gray-300">
