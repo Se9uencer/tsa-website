@@ -18,9 +18,21 @@ export default function SignUp() {
   const [message, setMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [emailSubmitAttempted, setEmailSubmitAttempted] = useState(false);
+
+  // Helper to check if email ends with @apps.nsd.org
+  const isEmailValid = email.trim().endsWith('@apps.nsd.org');
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setEmailTouched(true);
+    setEmailSubmitAttempted(true);
+    if (!isEmailValid) {
+      setError('Please use a school email (ending with @apps.nsd.org)');
+      return;
+    }
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
@@ -53,6 +65,11 @@ export default function SignUp() {
     setLoading(false);
   };
 
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    setEmailSubmitAttempted(false);
+  };
+
   return (
     <AuthLayout>
       <div className="flex flex-col items-center w-full">
@@ -70,8 +87,13 @@ export default function SignUp() {
             </div>
             <div>
               <label htmlFor="email" className="block text-white text-lg font-medium mb-2">Email address</label>
-              <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required disabled={loading}
+              <input id="email" type="email" value={email} onChange={handleEmailChange} required disabled={loading}
+                onFocus={() => setEmailFocused(true)}
+                onBlur={() => { setEmailFocused(false); setEmailTouched(true); }}
                 className="w-full px-5 py-4 rounded-xl bg-[#181e29] border-2 border-[#232a3a] text-white text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+              {(!isEmailValid && emailTouched && !emailFocused && !emailSubmitAttempted) && (
+                <div className="text-red-400 text-sm mt-2">Please use a school email (ending with @apps.nsd.org)</div>
+              )}
             </div>
               <div className="relative">
                 <label
@@ -143,10 +165,15 @@ export default function SignUp() {
             </div>
           </div>
           <div className="flex flex-col gap-6">
-            {error && <div className="text-red-400 text-sm mb-2">{error}</div>}
+            {(emailSubmitAttempted && !isEmailValid) && (
+              <div className="text-red-400 text-sm mb-2">Please use a school email (ending with @apps.nsd.org)</div>
+            )}
+            {error && (isEmailValid || !emailSubmitAttempted) && <div className="text-red-400 text-sm mb-2">{error}</div>}
             {message && <div className="text-green-400 text-sm mb-2">{message}</div>}
-            <button type="submit" disabled={loading}
-              className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-500 to-violet-500 text-white text-xl font-semibold shadow-lg hover:from-blue-600 hover:to-violet-600 transition cursor-pointer">
+            <button type="submit" disabled={loading || !isEmailValid} 
+              className={`w-full py-4 rounded-xl text-white text-xl font-semibold shadow-lg transition 
+                ${!isEmailValid && emailTouched ? 'bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed' : 'bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 cursor-pointer'}`}
+            >
               {loading ? 'Creating...' : 'Create Account'}
             </button>
           </div>

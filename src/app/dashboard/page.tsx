@@ -82,7 +82,7 @@ export default function Dashboard() {
     description: ''
   });
   const [savingAnnouncement, setSavingAnnouncement] = useState(false);
-  const [schoolEmail, setSchoolEmail] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
   const [registerPopupMessage, setRegisterPopupMessage] = useState<string | null>(null);
   const [registerPopupType, setRegisterPopupType] = useState<string>('');
   const [clubRegistrationOpenDate, setClubRegistrationOpenDate] = useState<Date | null>(null);
@@ -183,23 +183,19 @@ export default function Dashboard() {
         return;
       }
       setUser(data.user);
-      // Fetch user events and schoolEmail from profiles table
+      // Fetch user events and email from profiles table
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('events, schoolEmail')
+        .select('events, email')
         .eq('id', data.user.id)
         .single();
       if (!profileError && profile) {
         setUserEvents(Array.isArray(profile.events) ? profile.events : []);
-        setSchoolEmail(profile.schoolEmail || '');
+        setEmail(profile.email || '');
         // Registration popup logic
         const now = new Date();
-        const clubRegOpen = clubRegistrationOpenDate && clubRegistrationCloseDate && now >= clubRegistrationOpenDate && now <= clubRegistrationCloseDate;
         const eventRegOpen = eventRegistrationOpenDate && eventRegistrationCloseDate && now >= eventRegistrationOpenDate && now <= eventRegistrationCloseDate;
-        if (!profile.schoolEmail && clubRegOpen) {
-          setRegisterPopupMessage('You haven\'t registered to officially join North Creek TSA yet. Please do so here.');
-          setRegisterPopupType('North Creek TSA');
-        } else if ((Array.isArray(profile.events) ? profile.events.length : 0) < 1 && eventRegOpen && profile.schoolEmail) {
+        if ((Array.isArray(profile.events) ? profile.events.length : 0) < 1 && eventRegOpen) {
           setRegisterPopupMessage('You haven\'t registered for any competitive events yet. Please do so here.');
           setRegisterPopupType('events');
         } else {
@@ -208,14 +204,14 @@ export default function Dashboard() {
         }
       } else {
         setUserEvents([]);
-        setSchoolEmail('');
-        setRegisterPopupMessage('Please register to be a part of North Creek TSA here.');
-        setRegisterPopupType('North Creek TSA');
+        setEmail('');
+        setRegisterPopupMessage(null);
+        setRegisterPopupType('');
       }
       setLoading(false);
     };
     fetchUserAndEvents();
-  }, [router, clubRegistrationOpenDate, clubRegistrationCloseDate, eventRegistrationOpenDate, eventRegistrationCloseDate]);
+  }, [router, eventRegistrationOpenDate, eventRegistrationCloseDate]);
 
   // Cleanup tooltip timeout on unmount
   useEffect(() => {
