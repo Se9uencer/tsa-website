@@ -137,7 +137,7 @@ export default function Register() {
             <div className="w-full flex-1 min-h-[70vh] rounded-xl border border-[#232a3a] shadow-lg px-8 py-2 md:py-4 text-center bg-[#181e29]"
               style={{ background: '#181e29', boxShadow: '0 0 10px 0 #3b82f6, 0 0 24px 0 #8b5cf6, 0 0 0 1px #232a3a' }}>
               <div className="text-gray-200 text-2xl mt-8 font-bold px-8">
-                Register for TSA using the form below. You can check to see if you have already registered in <a href='https://docs.google.com/spreadsheets/d/1-Vr_UGlpelt1eNDaZHjf9GU6F_oiEKqNqJEi2kPOv2I/edit?usp=sharing' target="_blank" rel="noopener noreferrer" className='text-blue-400'>this spreadsheet</a>.
+                Register for TSA using the form below.
               </div>
 
               <iframe
