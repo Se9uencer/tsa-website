@@ -87,7 +87,7 @@ export default function Register() {
   // Show event list in left box during event registration
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a101f] py-16 pt-20 px-4">
-      <h1 className="text-4xl font-bold text-white mt-8 mb-8">{ 
+      <h1 className="text-4xl font-bold text-white mt-8 mb-8 text-center">{ 
       !clubRegistrationOpen && !eventRegistrationOpen ? "Registration is now closed." : (!eventRegistrationOpen ? "Club registration is" : "Event registration is")
       }{(clubRegistrationOpen || eventRegistrationOpen) && <span className='bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent'> open!</span>}</h1>
       <div className="flex-1 flex flex-col md:flex-row items-center w-full justify-center gap-8 md:gap-0">

@@ -112,7 +112,15 @@ export default function Dashboard() {
         .order('date', { ascending: true });
       if (!error && data) {
         const now = new Date();
-        const filtered = data.filter(e => new Date(e.date) >= now);
+        const filtered = data.filter(e => {
+          const eventDate = new Date(e.date);
+          // If event is in the future, include
+          if (eventDate > now) return true;
+          // If event is today (regardless of time), include
+          return eventDate.getFullYear() === now.getFullYear() &&
+                 eventDate.getMonth() === now.getMonth() &&
+                 eventDate.getDate() === now.getDate();
+        });
         setUpcomingEvents(filtered);
       }
     };

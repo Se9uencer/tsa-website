@@ -235,7 +235,7 @@ export default function Navbar() {
             <div className="flex flex-col gap-4">
               {SETTINGS_LIST.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-400 text-lg">There aren't any settings to configure yet.</p>
+                  <p className="text-gray-400 text-lg">There aren't any settings to configure for now.</p>
                 </div>
               ) : (
                 <>

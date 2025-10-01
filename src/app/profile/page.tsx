@@ -18,6 +18,18 @@ export default function Profile() {
   const [badgeImages, setBadgeImages] = useState<{ [badgeName: string]: string }>({});
   const [badgesLoading, setBadgesLoading] = useState(false);
   const router = useRouter();
+  const [openBadgeTooltip, setOpenBadgeTooltip] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    // Simple mobile detection (can be improved)
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Auth check - runs first
   useEffect(() => {
@@ -290,7 +302,13 @@ const calculateXPProgress = (xp: number) => {
                       {userData.badges.map((badge, idx) => (
                         <div
                           key={idx}
-                          className="relative group"
+                          className={`relative group`}
+                          onClick={isMobile ? (e => {
+                            e.stopPropagation();
+                            setOpenBadgeTooltip(openBadgeTooltip === idx ? null : idx);
+                          }) : undefined}
+                          tabIndex={0}
+                          onBlur={isMobile ? () => setOpenBadgeTooltip(null) : undefined}
                         >
                           <img
                             src={badgeImages[badge.name]}
@@ -316,7 +334,16 @@ const calculateXPProgress = (xp: number) => {
                             }`}
                           />
                           {/* Tooltip */}
-                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-[#232a3a] text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                          <div
+                            className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-[#232a3a] text-white text-sm rounded-lg shadow-lg whitespace-nowrap z-10 transition-opacity duration-200 pointer-events-none ${
+                              isMobile
+                                ? openBadgeTooltip === idx
+                                  ? 'opacity-100 pointer-events-auto' // show on click
+                                  : 'opacity-0'
+                                : 'opacity-0 group-hover:opacity-100'
+                            }`}
+                            style={isMobile ? { pointerEvents: openBadgeTooltip === idx ? 'auto' : 'none' } : {}}
+                          >
                             {badge.name}
                             {/* Tooltip arrow */}
                             <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#232a3a]"></div>
