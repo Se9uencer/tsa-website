@@ -156,5 +156,3 @@ export default function Register() {
     </div>
   );
 } 
-
-// https://tally.so/embed/3ERONo?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1&uuid=${userUuid}

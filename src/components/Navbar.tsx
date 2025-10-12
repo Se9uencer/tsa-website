@@ -12,6 +12,7 @@ const navLinks = [
   { name: 'Register', href: '/register' }, // Added Register as second link
   { name: 'Officers', href: '/officers' },
   { name: 'Resources', href: '/resources' },
+  { name: 'Opportunities', href: '/opportunities' },
   { name: 'Calendar', href: '/calendar' },
   { name: 'Leaderboard', href: '/leaderboard' },
   { name: 'FAQ', href: '/faq' },
