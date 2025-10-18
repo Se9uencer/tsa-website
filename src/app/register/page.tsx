@@ -67,7 +67,7 @@ export default function Register() {
         .select('deadline, date');
       if (!deadlinesError && deadlines) {
         deadlines.forEach((row: { deadline: string; date: string }) => {
-          const localDate = new Date(row.date + 'T00:00:00-08:00');
+          const localDate = new Date(row.date + 'T00:00:00-07:00'); // 7 = PDT
           if (row.deadline === 'Club Registration Open') setClubRegistrationOpenDate(localDate);
           if (row.deadline === 'Club Registration Close') setClubRegistrationCloseDate(localDate);
           if (row.deadline === 'Event Registration Open') setEventRegistrationOpenDate(localDate);

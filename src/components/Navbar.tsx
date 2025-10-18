@@ -8,15 +8,31 @@ import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
 
 const navLinks = [
-  { name: 'About', href: '/about' },
-  { name: 'Register', href: '/register' }, // Added Register as second link
-  { name: 'Officers', href: '/officers' },
-  { name: 'Resources', href: '/resources' },
-  { name: 'Opportunities', href: '/opportunities' },
+  { 
+    name: 'About Us', 
+    items: [
+      { name: 'About', href: '/about' },
+      { name: 'Officers', href: '/officers' },
+      { name: 'Contact', href: '/contact' }
+    ]
+  },
+  { 
+    name: 'Get Involved', 
+    items: [
+      { name: 'Register', href: '/register' },
+      { name: 'Opportunities', href: '/opportunities' },
+      { name: 'Contact', href: '/contact' }
+    ]
+  },
+  { 
+    name: 'Resources', 
+    items: [
+      { name: 'FAQ', href: '/faq' },
+      { name: 'Event Resources', href: '/resources' },
+    ]
+  },
   { name: 'Calendar', href: '/calendar' },
   { name: 'Leaderboard', href: '/leaderboard' },
-  { name: 'FAQ', href: '/faq' },
-  { name: 'Contact', href: '/contact' },
 ];
 
 export default function Navbar() {
@@ -51,6 +67,8 @@ export default function Navbar() {
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [visibleLinksCount, setVisibleLinksCount] = useState(navLinks.length);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [mobileOpenDropdown, setMobileOpenDropdown] = useState<string | null>(null);
   const navLinksRef = useRef<HTMLDivElement>(null);
   const navContainerRef = useRef<HTMLDivElement>(null);
   const logoRef = useRef<HTMLAnchorElement>(null);
@@ -76,6 +94,30 @@ export default function Navbar() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (navLinksRef.current && !navLinksRef.current.contains(event.target as Node)) {
+        setOpenDropdown(null);
+        setMoreDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Helper function to check if a link is active (for groups, check if any child is active)
+  const isLinkActive = (link: any) => {
+    if (link.href) {
+      return pathname === link.href;
+    }
+    if (link.items) {
+      return link.items.some((item: any) => pathname === item.href);
+    }
+    return false;
+  };
 
   useEffect(() => {
     if (user && showSettingsModal) {
@@ -135,16 +177,62 @@ export default function Navbar() {
           </Link>
           {/* Center: Nav Links (hidden on mobile) */}
           <div ref={navLinksRef} className="hidden md:flex gap-6 h-full items-center">
-            {navLinks.slice(0, visibleLinksCount).map(link => (
-              <Link
-                key={link.name}
-                href={link.href}
-                className={`font-medium transition flex items-center h-full ${pathname === link.href ? 'text-blue-400' : 'text-white hover:text-blue-400'}`}
-                style={{ height: '100%' }}
-              >
-                {link.name}
-              </Link>
-            ))}
+            {navLinks.slice(0, visibleLinksCount).map(link => {
+              if (link.items) {
+                return (
+                  <div
+                    key={link.name}
+                    className="relative h-full flex items-center"
+                    onMouseEnter={() => setOpenDropdown(link.name)}
+                    onMouseLeave={() => setOpenDropdown(null)}
+                  >
+                    <button
+                      className={`font-medium transition flex items-center gap-1 h-full ${
+                        isLinkActive(link) ? 'text-blue-400' : 'text-white hover:text-blue-400'
+                      }`}
+                      style={{ height: '100%' }}
+                    >
+                      {link.name}
+                      <ChevronDownIcon className="w-4 h-4" />
+                    </button>
+                    <div
+                      className={`absolute left-0 top-full w-48 bg-transparent z-20 transition-all duration-200
+                        ${openDropdown === link.name ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}
+                      `}
+                    >
+                      {/* Add an inner wrapper div with padding-top and the visual styles */}
+                      <div className="pt-2">
+                        <div className="bg-[#23232a] border border-[#232a3a] rounded-xl shadow-2xl overflow-hidden">
+                          {link.items.map(item => (
+                            <Link
+                              key={item.name}
+                              href={item.href}
+                              className={`block px-4 py-2 text-white hover:bg-blue-900/30 transition first:rounded-t-xl last:rounded-b-xl ${
+                                pathname === item.href ? 'bg-blue-900/30 text-blue-400' : ''
+                              }`}
+                            >
+                              {item.name}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              } else {
+                // Regular link
+                return (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className={`font-medium transition flex items-center h-full ${pathname === link.href ? 'text-blue-400' : 'text-white hover:text-blue-400'}`}
+                    style={{ height: '100%' }}
+                  >
+                    {link.name}
+                  </Link>
+                );
+              }
+            })}
             {visibleLinksCount < navLinks.length && (
               <div className="relative h-full flex items-center">
                 <button
@@ -158,16 +246,36 @@ export default function Navbar() {
                 <div className={`absolute right-0 top-full mt-2 w-40 bg-[#23232a] border border-[#232a3a] rounded-xl shadow-2xl z-20 transition-all duration-200 ${moreDropdownOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
                   style={{ minWidth: '10rem' }}
                 >
-                  {navLinks.slice(visibleLinksCount).map(link => (
-                    <Link
-                      key={link.name}
-                      href={link.href}
-                      className="block px-4 py-2 text-white hover:bg-blue-900/30 transition"
-                      onClick={() => setMoreDropdownOpen(false)}
-                    >
-                      {link.name}
-                    </Link>
-                  ))}
+                  {navLinks.slice(visibleLinksCount).map(link => {
+                    if (link.items) {
+                      return (
+                        <div key={link.name} className="border-b border-[#232a3a] last:border-b-0">
+                          <div className="px-4 py-2 text-sm font-semibold text-gray-300 bg-[#1a1a1a]">{link.name}</div>
+                          {link.items.map(item => (
+                            <Link
+                              key={item.name}
+                              href={item.href}
+                              className={`block px-6 py-2 text-white hover:bg-blue-900/30 transition ${pathname === item.href ? 'bg-blue-900/30 text-blue-400' : ''}`}
+                              onClick={() => setMoreDropdownOpen(false)}
+                            >
+                              {item.name}
+                            </Link>
+                          ))}
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <Link
+                          key={link.name}
+                          href={link.href}
+                          className={`block px-4 py-2 text-white hover:bg-blue-900/30 transition ${pathname === link.href ? 'bg-blue-900/30 text-blue-400' : ''}`}
+                          onClick={() => setMoreDropdownOpen(false)}
+                        >
+                          {link.name}
+                        </Link>
+                      );
+                    }
+                  })}
                 </div>
               </div>
             )}
@@ -175,7 +283,12 @@ export default function Navbar() {
           {/* Right: Profile Dropdown (dummy for now) */}
           <div className="flex items-center gap-2">
             {/* Hamburger for mobile */}
-            <button className="md:hidden p-2 rounded text-white hover:bg-blue-900/30 transition" onClick={() => setNavOpen(!navOpen)}>
+            <button className="md:hidden p-2 rounded text-white hover:bg-blue-900/30 transition" onClick={() => {
+              setNavOpen(!navOpen);
+              if (navOpen) {
+                setMobileOpenDropdown(null);
+              }
+            }}>
               {navOpen ? <XMarkIcon className="w-6 h-6" /> : <Bars3Icon className="w-6 h-6" />}
             </button>
             <div className="relative flex items-center gap-2">
@@ -213,16 +326,46 @@ export default function Navbar() {
         {/* Mobile Nav Drawer */}
         <div className={`md:hidden bg-[#181e29] border-t border-[#232a3a] shadow-lg transition-all duration-500 ${navOpen ? 'opacity-100 max-h-[500px] pointer-events-auto' : 'opacity-0 max-h-0 pointer-events-none overflow-hidden'}`}>
           <div className={`flex flex-col gap-2 px-4 py-4 ${navOpen ? 'overflow-y-auto max-h-[calc(100vh-4rem)]' : ''}`}>
-            {navLinks.map(link => (
-              <Link
-                key={link.name}
-                href={link.href}
-                className={`font-medium transition py-2 ${pathname === link.href ? 'text-blue-400' : 'text-white hover:text-blue-400'}`}
-                onClick={() => setNavOpen(false)}
-              >
-                {link.name}
-              </Link>
-            ))}
+            {navLinks.map(link => {
+              if (link.items) {
+                return (
+                  <div key={link.name}>
+                    <button
+                      className={`font-medium transition py-2 flex items-center justify-between w-full text-left ${isLinkActive(link) ? 'text-blue-400' : 'text-white hover:text-blue-400'}`}
+                      onClick={() => setMobileOpenDropdown(mobileOpenDropdown === link.name ? null : link.name)}
+                    >
+                      {link.name}
+                      <ChevronDownIcon className={`w-4 h-4 transition-transform ${mobileOpenDropdown === link.name ? 'rotate-180' : ''}`} />
+                    </button>
+                    <div className={`overflow-hidden transition-all duration-300 ${mobileOpenDropdown === link.name ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                      <div className="pl-4 space-y-1">
+                        {link.items.map(item => (
+                          <Link
+                            key={item.name}
+                            href={item.href}
+                            className={`block py-2 text-sm transition ${pathname === item.href ? 'text-blue-400' : 'text-gray-300 hover:text-white'}`}
+                            onClick={() => setNavOpen(false)}
+                          >
+                            {item.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              } else {
+                return (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className={`font-medium transition py-2 ${pathname === link.href ? 'text-blue-400' : 'text-white hover:text-blue-400'}`}
+                    onClick={() => setNavOpen(false)}
+                  >
+                    {link.name}
+                  </Link>
+                );
+              }
+            })}
           </div>
         </div>
       </nav>
@@ -268,4 +411,4 @@ export default function Navbar() {
       )}
     </>
   );
-} 
+}
