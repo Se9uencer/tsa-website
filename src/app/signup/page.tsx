@@ -86,7 +86,7 @@ export default function SignUp() {
                 className="w-full px-5 py-4 rounded-xl bg-[#181e29] border-2 border-[#232a3a] text-white text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
             </div>
             <div>
-              <label htmlFor="email" className="block text-white text-lg font-medium mb-2">Email address</label>
+              <label htmlFor="email" className="block text-white text-lg font-medium mb-2">School Email address</label>
               <input id="email" type="email" value={email} onChange={handleEmailChange} required disabled={loading}
                 onFocus={() => setEmailFocused(true)}
                 onBlur={() => { setEmailFocused(false); setEmailTouched(true); }}

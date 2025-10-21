@@ -21,7 +21,6 @@ const navLinks = [
     items: [
       { name: 'Register', href: '/register' },
       { name: 'Opportunities', href: '/opportunities' },
-      { name: 'Contact', href: '/contact' }
     ]
   },
   { 
@@ -280,46 +279,35 @@ export default function Navbar() {
               </div>
             )}
           </div>
-          {/* Right: Profile Dropdown (dummy for now) */}
-          <div className="flex items-center gap-2">
-            {/* Hamburger for mobile */}
-            <button className="md:hidden p-2 rounded text-white hover:bg-blue-900/30 transition" onClick={() => {
-              setNavOpen(!navOpen);
-              if (navOpen) {
-                setMobileOpenDropdown(null);
-              }
-            }}>
-              {navOpen ? <XMarkIcon className="w-6 h-6" /> : <Bars3Icon className="w-6 h-6" />}
-            </button>
-            <div className="relative flex items-center gap-2">
+          {/* Right: Profile Dropdown */}
+          <div className="relative flex items-center gap-2">
+            <div
+              className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-blue-900/30 transition cursor-pointer"
+              onClick={() => setDropdownOpen((open) => !open)}
+            >
               <img
                 src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=3b82f6&color=fff&size=64`}
                 alt="Profile"
-                className="w-10 h-10 rounded-full border-2 border-blue-500 shadow cursor-pointer"
-                onClick={() => setDropdownOpen((open) => !open)}
+                className="w-10 h-10 rounded-full border-2 border-blue-500 shadow"
               />
               <span className="font-semibold text-base text-white hidden sm:inline">{userName}</span>
-              <button
-                className="p-1 rounded-full hover:bg-blue-900/30 transition cursor-pointer"
-                onClick={() => setDropdownOpen((open) => !open)}
-              >
-                <ChevronDownIcon className="w-5 h-5 text-blue-400" />
+              <ChevronDownIcon className="w-5 h-5 text-blue-400" />
+            </div>
+            
+            {/* Dropdown Menu */}
+            <div className={`absolute right-0 top-full mt-2 w-56 bg-[#23232a] border border-[#232a3a] rounded-xl shadow-2xl z-20 transition-all duration-200 ${dropdownOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
+              style={{ minWidth: '14rem' }}
+            >
+              <div className="px-4 py-2 text-xs text-gray-400 border-b border-[#232a3a]">Signed in as <span className="font-semibold text-white">{userName}</span></div>
+              <Link href="/profile" className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white" onClick={() => setDropdownOpen(false)}>
+                <UserIcon className="w-5 h-5 text-gray-300" /> Your Profile
+              </Link>
+              <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white cursor-pointer" onClick={() => { setShowSettingsModal(true); setDropdownOpen(false); }}>
+                <Cog6ToothIcon className="w-5 h-5 text-gray-300" /> Settings
               </button>
-              {/* Dropdown Menu */}
-              <div className={`absolute right-0 top-full mt-2 w-56 bg-[#23232a] border border-[#232a3a] rounded-xl shadow-2xl z-20 transition-all duration-200 ${dropdownOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
-                style={{ minWidth: '14rem' }}
-              >
-                <div className="px-4 py-2 text-xs text-gray-400 border-b border-[#232a3a]">Signed in as <span className="font-semibold text-white">{userName}</span></div>
-                <Link href="/profile" className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white" onClick={() => setDropdownOpen(false)}>
-                  <UserIcon className="w-5 h-5 text-gray-300" /> Your Profile
-                </Link>
-                <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white cursor-pointer" onClick={() => { setShowSettingsModal(true); setDropdownOpen(false); }}>
-                  <Cog6ToothIcon className="w-5 h-5 text-gray-300" /> Settings
-                </button>
-                <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white rounded-b-xl cursor-pointer" onClick={handleSignOut}>
-                  <ArrowRightOnRectangleIcon className="w-5 h-5 text-gray-300" /> Sign out
-                </button>
-              </div>
+              <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white rounded-b-xl cursor-pointer" onClick={handleSignOut}>
+                <ArrowRightOnRectangleIcon className="w-5 h-5 text-gray-300" /> Sign out
+              </button>
             </div>
           </div>
         </div>
