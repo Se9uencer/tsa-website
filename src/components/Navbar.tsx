@@ -66,6 +66,7 @@ export default function Navbar() {
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [visibleLinksCount, setVisibleLinksCount] = useState(navLinks.length);
+  const [showHamburger, setShowHamburger] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileOpenDropdown, setMobileOpenDropdown] = useState<string | null>(null);
   const navLinksRef = useRef<HTMLDivElement>(null);
@@ -73,25 +74,58 @@ export default function Navbar() {
   const logoRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
     const handleResize = () => {
-      if (!navLinksRef.current || !navContainerRef.current || !logoRef.current) return;
-      const navLinksChildren = Array.from(navLinksRef.current.children) as HTMLElement[];
-      let totalWidth = 0;
-      // Dynamically measure logo/text width
-      const logoWidth = logoRef.current.offsetWidth;
-      // 32px for right profile area gap, 32px for left/right padding, 32px for possible scrollbar, 16px buffer
-      let maxWidth = navContainerRef.current.offsetWidth - logoWidth - 32 - 32 - 32 - 16;
-      let count = 0;
-      for (let i = 0; i < navLinksChildren.length; i++) {
-        totalWidth += navLinksChildren[i].offsetWidth + 24; // 24px gap
-        if (totalWidth > maxWidth) break;
-        count++;
-      }
-      setVisibleLinksCount(count);
+      // Clear previous timeout to debounce
+      clearTimeout(timeoutId);
+      
+      timeoutId = setTimeout(() => {
+        if (!navLinksRef.current || !navContainerRef.current || !logoRef.current) return;
+        
+        const isMobile = window.innerWidth < 768; // md breakpoint
+        
+        if (isMobile) {
+          // On mobile, always show hamburger and hide all nav links
+          setShowHamburger(true);
+          setVisibleLinksCount(0);
+          return;
+        }
+        
+        // For desktop, we need to check if we can fit all links
+        const navLinksChildren = Array.from(navLinksRef.current.children) as HTMLElement[];
+        let totalWidth = 0;
+        
+        // Dynamically measure logo/text width
+        const logoWidth = logoRef.current.offsetWidth;
+        // Account for profile section width (estimate ~200px for profile + hamburger button space)
+        const profileSectionWidth = 220;
+        // 32px for left/right padding, 32px for possible scrollbar, 32px buffer
+        let maxWidth = navContainerRef.current.offsetWidth - logoWidth - profileSectionWidth - 32 - 32 - 32;
+        let count = 0;
+        
+        // Calculate how many links can fit
+        for (let i = 0; i < navLinksChildren.length; i++) {
+          const linkWidth = navLinksChildren[i].offsetWidth + 24; // 24px gap
+          if (totalWidth + linkWidth > maxWidth) break;
+          totalWidth += linkWidth;
+          count++;
+        }
+        
+        setVisibleLinksCount(count);
+        
+        // Show hamburger menu only if we can't fit all links
+        const canFitAllLinks = count >= navLinks.length;
+        setShowHamburger(!canFitAllLinks);
+      }, 100); // 100ms debounce
     };
+    
     handleResize();
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   // Close dropdowns when clicking outside
@@ -174,8 +208,8 @@ export default function Navbar() {
             <Logo className="w-20 h-20 text-blue-500 group-hover:opacity-80 transition" />
             <span className="font-bold text-lg text-white tracking-wide group-hover:text-blue-400 transition">Portal</span>
           </Link>
-          {/* Center: Nav Links (hidden on mobile) */}
-          <div ref={navLinksRef} className="hidden md:flex gap-6 h-full items-center">
+          {/* Center: Nav Links (hidden when hamburger menu is shown) */}
+          <div ref={navLinksRef} className={`${showHamburger ? 'hidden' : 'flex'} gap-6 h-full items-center overflow-hidden`}>
             {navLinks.slice(0, visibleLinksCount).map(link => {
               if (link.items) {
                 return (
@@ -280,7 +314,21 @@ export default function Navbar() {
             )}
           </div>
           {/* Right: Profile Dropdown */}
-          <div className="relative flex items-center gap-2">
+          <div className="relative flex items-center">
+            {/* Hamburger Menu Button (shows when navbar links would overflow) */}
+            {showHamburger && (
+              <button
+                className="flex items-center justify-center w-10 h-10 text-white hover:text-blue-400 transition"
+                onClick={() => setNavOpen(!navOpen)}
+                aria-label="Toggle navigation menu"
+              >
+                {navOpen ? (
+                  <XMarkIcon className="w-6 h-6" />
+                ) : (
+                  <Bars3Icon className="w-6 h-6" />
+                )}
+              </button>
+            )}
             <div
               className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-blue-900/30 transition cursor-pointer"
               onClick={() => setDropdownOpen((open) => !open)}
@@ -312,7 +360,7 @@ export default function Navbar() {
           </div>
         </div>
         {/* Mobile Nav Drawer */}
-        <div className={`md:hidden bg-[#181e29] border-t border-[#232a3a] shadow-lg transition-all duration-500 ${navOpen ? 'opacity-100 max-h-[500px] pointer-events-auto' : 'opacity-0 max-h-0 pointer-events-none overflow-hidden'}`}>
+        <div className={`${showHamburger ? 'block' : 'hidden'} bg-[#181e29] border-t border-[#232a3a] shadow-lg transition-all duration-500 ${navOpen ? 'opacity-100 max-h-[500px] pointer-events-auto' : 'opacity-0 max-h-0 pointer-events-none overflow-hidden'}`}>
           <div className={`flex flex-col gap-2 px-4 py-4 ${navOpen ? 'overflow-y-auto max-h-[calc(100vh-4rem)]' : ''}`}>
             {navLinks.map(link => {
               if (link.items) {
