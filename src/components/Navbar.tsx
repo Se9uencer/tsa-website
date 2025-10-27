@@ -66,65 +66,94 @@ export default function Navbar() {
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [visibleLinksCount, setVisibleLinksCount] = useState(navLinks.length);
-  const [showHamburger, setShowHamburger] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileOpenDropdown, setMobileOpenDropdown] = useState<string | null>(null);
+  const [showHamburger, setShowHamburger] = useState(false);
   const navLinksRef = useRef<HTMLDivElement>(null);
   const navContainerRef = useRef<HTMLDivElement>(null);
   const logoRef = useRef<HTMLAnchorElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null); // NEW: measure right area
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    
     const handleResize = () => {
-      // Clear previous timeout to debounce
-      clearTimeout(timeoutId);
-      
-      timeoutId = setTimeout(() => {
-        if (!navLinksRef.current || !navContainerRef.current || !logoRef.current) return;
-        
-        const isMobile = window.innerWidth < 768; // md breakpoint
-        
-        if (isMobile) {
-          // On mobile, always show hamburger and hide all nav links
-          setShowHamburger(true);
-          setVisibleLinksCount(0);
-          return;
-        }
-        
-        // For desktop, we need to check if we can fit all links
-        const navLinksChildren = Array.from(navLinksRef.current.children) as HTMLElement[];
+      // small screens: always hamburger
+      if (window.innerWidth < 768) {
+        setVisibleLinksCount(0);
+        setShowHamburger(true);
+        return;
+      }
+
+      if (!navLinksRef.current || !navContainerRef.current || !logoRef.current || !profileRef.current) {
+        // fallback: show hamburger if we can't measure
+        setShowHamburger(true);
+        return;
+      }
+
+      // temporarily ensure navLinks is measurable (it may be hidden)
+      const navEl = navLinksRef.current!;
+      const prevDisplay = navEl.style.display;
+      const computed = getComputedStyle(navEl);
+      let restored = false;
+      if (computed.display === 'none') {
+        // show offscreen for measurement
+        navEl.style.display = 'flex';
+        navEl.style.position = 'absolute';
+        navEl.style.visibility = 'hidden';
+        restored = true;
+      }
+
+      try {
+        const navLinksChildren = Array.from(navEl.children) as HTMLElement[];
+        // measure total widths of each link (use offsetWidth)
         let totalWidth = 0;
-        
-        // Dynamically measure logo/text width
-        const logoWidth = logoRef.current.offsetWidth;
-        // Account for profile section width (estimate ~200px for profile + hamburger button space)
-        const profileSectionWidth = 220;
-        // 32px for left/right padding, 32px for possible scrollbar, 32px buffer
-        let maxWidth = navContainerRef.current.offsetWidth - logoWidth - profileSectionWidth - 32 - 32 - 32;
+        const logoWidth = logoRef.current!.offsetWidth;
+        const profileWidth = profileRef.current!.offsetWidth;
+
+        // available width for nav links: container width minus logo area and profile area and some buffer
+        const containerWidth = navContainerRef.current!.offsetWidth;
+        const buffer = 32; // spacing buffer
+        const maxWidth = Math.max(0, containerWidth - logoWidth - profileWidth - buffer);
+
         let count = 0;
-        
-        // Calculate how many links can fit
         for (let i = 0; i < navLinksChildren.length; i++) {
-          const linkWidth = navLinksChildren[i].offsetWidth + 24; // 24px gap
-          if (totalWidth + linkWidth > maxWidth) break;
-          totalWidth += linkWidth;
+          const w = (navLinksChildren[i] as HTMLElement).offsetWidth;
+          // include gap approx (24)
+          totalWidth += w + 24;
+          if (totalWidth > maxWidth) break;
           count++;
         }
-        
+
         setVisibleLinksCount(count);
-        
-        // Show hamburger menu only if we can't fit all links
-        const canFitAllLinks = count >= navLinks.length;
-        setShowHamburger(!canFitAllLinks);
-      }, 100); // 100ms debounce
+
+        // show hamburger if not all links fit (or none fit)
+        if (count < navLinks.length || count === 0) {
+          setShowHamburger(true);
+        } else {
+          setShowHamburger(false);
+        }
+      } finally {
+        if (restored) {
+          navEl.style.display = prevDisplay;
+          navEl.style.position = '';
+          navEl.style.visibility = '';
+        }
+      }
     };
-    
+
+    // run once and on resize (debounce lightly)
     handleResize();
-    window.addEventListener('resize', handleResize);
+    let t: number | undefined;
+    const onResize = () => {
+      window.clearTimeout(t);
+      t = window.setTimeout(handleResize, 80);
+    };
+    window.addEventListener('resize', onResize);
+    // also re-run when fonts/images load to get correct measurements
+    window.addEventListener('load', handleResize);
+
     return () => {
-      window.removeEventListener('resize', handleResize);
-      clearTimeout(timeoutId);
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('load', handleResize);
     };
   }, []);
 
@@ -208,8 +237,12 @@ export default function Navbar() {
             <Logo className="w-20 h-20 text-blue-500 group-hover:opacity-80 transition" />
             <span className="font-bold text-lg text-white tracking-wide group-hover:text-blue-400 transition">Portal</span>
           </Link>
-          {/* Center: Nav Links (hidden when hamburger menu is shown) */}
-          <div ref={navLinksRef} className={`${showHamburger ? 'hidden' : 'flex'} gap-6 h-full items-center overflow-hidden`}>
+
+          {/* Center: Nav Links (hidden when hamburger is shown) */}
+          <div
+            ref={navLinksRef}
+            className={`${showHamburger ? 'hidden' : 'hidden md:flex'} gap-6 h-full items-center`}
+          >
             {navLinks.slice(0, visibleLinksCount).map(link => {
               if (link.items) {
                 return (
@@ -266,101 +299,60 @@ export default function Navbar() {
                 );
               }
             })}
-            {visibleLinksCount < navLinks.length && (
-              <div className="relative h-full flex items-center">
-                <button
-                  className="font-medium text-white hover:text-blue-400 transition flex items-center gap-1 px-2 py-1 rounded h-full"
-                  onClick={() => setMoreDropdownOpen((open) => !open)}
-                  type="button"
-                  style={{ height: '100%' }}
-                >
-                  More <ChevronDownIcon className="w-4 h-4 text-blue-400" />
-                </button>
-                <div className={`absolute right-0 top-full mt-2 w-40 bg-[#23232a] border border-[#232a3a] rounded-xl shadow-2xl z-20 transition-all duration-200 ${moreDropdownOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
-                  style={{ minWidth: '10rem' }}
-                >
-                  {navLinks.slice(visibleLinksCount).map(link => {
-                    if (link.items) {
-                      return (
-                        <div key={link.name} className="border-b border-[#232a3a] last:border-b-0">
-                          <div className="px-4 py-2 text-sm font-semibold text-gray-300 bg-[#1a1a1a]">{link.name}</div>
-                          {link.items.map(item => (
-                            <Link
-                              key={item.name}
-                              href={item.href}
-                              className={`block px-6 py-2 text-white hover:bg-blue-900/30 transition ${pathname === item.href ? 'bg-blue-900/30 text-blue-400' : ''}`}
-                              onClick={() => setMoreDropdownOpen(false)}
-                            >
-                              {item.name}
-                            </Link>
-                          ))}
-                        </div>
-                      );
-                    } else {
-                      return (
-                        <Link
-                          key={link.name}
-                          href={link.href}
-                          className={`block px-4 py-2 text-white hover:bg-blue-900/30 transition ${pathname === link.href ? 'bg-blue-900/30 text-blue-400' : ''}`}
-                          onClick={() => setMoreDropdownOpen(false)}
-                        >
-                          {link.name}
-                        </Link>
-                      );
-                    }
-                  })}
-                </div>
-              </div>
-            )}
           </div>
-          {/* Right: Profile Dropdown */}
-          <div className="relative flex items-center">
-            {/* Hamburger Menu Button (shows when navbar links would overflow) */}
+
+          {/* Right area: hamburger (when needed) + profile */}
+          <div className="flex items-center gap-2">
+            {/* Hamburger directly to left of profile */}
             {showHamburger && (
               <button
-                className="flex items-center justify-center w-10 h-10 text-white hover:text-blue-400 transition"
-                onClick={() => setNavOpen(!navOpen)}
-                aria-label="Toggle navigation menu"
+                className="p-2 rounded-lg hover:bg-blue-900/30 transition text-white mr-0"
+                onClick={() => setNavOpen((o) => !o)}
+                aria-label="Toggle navigation"
               >
-                {navOpen ? (
-                  <XMarkIcon className="w-6 h-6" />
-                ) : (
-                  <Bars3Icon className="w-6 h-6" />
-                )}
+                {navOpen ? <XMarkIcon className="w-6 h-6" /> : <Bars3Icon className="w-6 h-6" />}
               </button>
             )}
-            <div
-              className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-blue-900/30 transition cursor-pointer"
-              onClick={() => setDropdownOpen((open) => !open)}
-            >
-              <img
-                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=3b82f6&color=fff&size=64`}
-                alt="Profile"
-                className="w-10 h-10 rounded-full border-2 border-blue-500 shadow"
-              />
-              <span className="font-semibold text-base text-white hidden sm:inline">{userName}</span>
-              <ChevronDownIcon className="w-5 h-5 text-blue-400" />
-            </div>
-            
-            {/* Dropdown Menu */}
-            <div className={`absolute right-0 top-full mt-2 w-56 bg-[#23232a] border border-[#232a3a] rounded-xl shadow-2xl z-20 transition-all duration-200 ${dropdownOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
-              style={{ minWidth: '14rem' }}
-            >
-              <div className="px-4 py-2 text-xs text-gray-400 border-b border-[#232a3a]">Signed in as <span className="font-semibold text-white">{userName}</span></div>
-              <Link href="/profile" className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white" onClick={() => setDropdownOpen(false)}>
-                <UserIcon className="w-5 h-5 text-gray-300" /> Your Profile
-              </Link>
-              <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white cursor-pointer" onClick={() => { setShowSettingsModal(true); setDropdownOpen(false); }}>
-                <Cog6ToothIcon className="w-5 h-5 text-gray-300" /> Settings
-              </button>
-              <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white rounded-b-xl cursor-pointer" onClick={handleSignOut}>
-                <ArrowRightOnRectangleIcon className="w-5 h-5 text-gray-300" /> Sign out
-              </button>
+
+            {/* Right: Profile Dropdown */}
+            <div ref={profileRef} className="relative flex items-center gap-2">
+              <div
+                className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-blue-900/30 transition cursor-pointer"
+                onClick={() => setDropdownOpen((open) => !open)}
+              >
+                <img
+                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=3b82f6&color=fff&size=64`}
+                  alt="Profile"
+                  className="w-10 h-10 rounded-full border-2 border-blue-500 shadow"
+                />
+                <span className="font-semibold text-base text-white hidden sm:inline">{userName}</span>
+                <ChevronDownIcon className="w-5 h-5 text-blue-400" />
+              </div>
+              
+              {/* Dropdown Menu */}
+              <div className={`absolute right-0 top-full mt-2 w-56 bg-[#23232a] border border-[#232a3a] rounded-xl shadow-2xl z-20 transition-all duration-200 ${dropdownOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
+                style={{ minWidth: '14rem' }}
+              >
+                <div className="px-4 py-2 text-xs text-gray-400 border-b border-[#232a3a]">Signed in as <span className="font-semibold text-white">{userName}</span></div>
+                <Link href="/profile" className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white" onClick={() => setDropdownOpen(false)}>
+                  <UserIcon className="w-5 h-5 text-gray-300" /> Your Profile
+                </Link>
+                <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white cursor-pointer" onClick={() => { setShowSettingsModal(true); setDropdownOpen(false); }}>
+                  <Cog6ToothIcon className="w-5 h-5 text-gray-300" /> Settings
+                </button>
+                <button className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-blue-900/30 transition text-white rounded-b-xl cursor-pointer" onClick={handleSignOut}>
+                  <ArrowRightOnRectangleIcon className="w-5 h-5 text-gray-300" /> Sign out
+                </button>
+              </div>
             </div>
           </div>
         </div>
-        {/* Mobile Nav Drawer */}
-        <div className={`${showHamburger ? 'block' : 'hidden'} bg-[#181e29] border-t border-[#232a3a] shadow-lg transition-all duration-500 ${navOpen ? 'opacity-100 max-h-[500px] pointer-events-auto' : 'opacity-0 max-h-0 pointer-events-none overflow-hidden'}`}>
+
+        {/* Mobile / overflow Drawer
+            - show when navOpen true
+            - allow it to be shown on desktop when showHamburger is true (i.e. links would overflow)
+        */}
+        <div className={`${showHamburger ? '' : 'md:hidden'} bg-[#181e29] border-t border-[#232a3a] shadow-lg transition-all duration-500 ${navOpen ? 'opacity-100 max-h-[500px] pointer-events-auto' : 'opacity-0 max-h-0 pointer-events-none overflow-hidden'}`}>
           <div className={`flex flex-col gap-2 px-4 py-4 ${navOpen ? 'overflow-y-auto max-h-[calc(100vh-4rem)]' : ''}`}>
             {navLinks.map(link => {
               if (link.items) {
@@ -380,7 +372,7 @@ export default function Navbar() {
                             key={item.name}
                             href={item.href}
                             className={`block py-2 text-sm transition ${pathname === item.href ? 'text-blue-400' : 'text-gray-300 hover:text-white'}`}
-                            onClick={() => setNavOpen(false)}
+                            onClick={() => { setNavOpen(false); setMobileOpenDropdown(null); }}
                           >
                             {item.name}
                           </Link>
@@ -405,6 +397,7 @@ export default function Navbar() {
           </div>
         </div>
       </nav>
+
       {/* Modals */}
       {/* Settings Modal */}
       {showSettingsModal && (
